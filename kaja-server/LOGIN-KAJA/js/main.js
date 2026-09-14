@@ -8,7 +8,8 @@
  */
 const app = document.getElementById('app');
 /* BASE DE LA API DEL BACKEND KAJA */
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://proyecto-kaja-production.up.railway.app/api';
+
 
 const state = {
   companyValidated: false,
