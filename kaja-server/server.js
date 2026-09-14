@@ -23,7 +23,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/KAJA-FRONTED', express.static(path.join(__dirname, 'KAJA-FRONTED')));
 app.use('/LOGIN-KAJA', express.static(path.join(__dirname, 'LOGIN-KAJA')));
 
-app.use('/api/auth', authRoutes);
+app.use('/api', authRoutes);
 app.use('/api/empresas', empresaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/roles', rolRoutes);
