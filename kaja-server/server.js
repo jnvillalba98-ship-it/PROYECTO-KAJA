@@ -20,8 +20,8 @@ app.use(cors({ origin: true, credentials: false }));
 app.use(express.json({ limit: '1mb' }));
 
 /* SIRVE LOS FRONTENDS ESTATICOS DESDE EL MISMO BACKEND */
-app.use('/KAJA-FRONTED', express.static(path.join(__dirname, '..', 'KAJA-FRONTED')));
-app.use('/LOGIN-KAJA', express.static(path.join(__dirname, '..', 'LOGIN-KAJA')));
+app.use('/KAJA-FRONTED', express.static(path.join(__dirname, '../KAJA-FRONTED')));
+app.use('/LOGIN-KAJA', express.static(path.join(__dirname, '../LOGIN-KAJA')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/empresas', empresaRoutes);
