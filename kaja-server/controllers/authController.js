@@ -7,8 +7,8 @@ const login = async (req, res) => {
             return res.status(400).json({ mensaje: 'Usuario y contraseña son obligatorios' });
         }
 
-        const session = await authService.login(String(usuario).trim(), String(password));
-        return res.json({ mensaje: 'Login exitoso', ...session });
+        const result = await authService.login(String(usuario).trim(), String(password));
+        return res.json({ mensaje: 'Login exitoso', token: result.token, usuario: result.usuario });
     } catch (error) {
         return res.status(401).json({ mensaje: error.message || 'Credenciales inválidas' });
     }
@@ -46,3 +46,4 @@ const changePassword = async (req, res) => {
 };
 
 module.exports = { login, companyLogin, me, changePassword };
+
