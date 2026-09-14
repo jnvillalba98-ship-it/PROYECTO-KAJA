@@ -1,0 +1,28 @@
+# Dependencias de Node.js
+node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Archivos generados por Maven/Java
+target/
+
+# Archivos de compilación
+dist/
+build/
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Configuración local de editores
+.idea/
