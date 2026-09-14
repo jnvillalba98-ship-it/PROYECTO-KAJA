@@ -15,15 +15,17 @@ const reporteRoutes = require('./routes/reporte.routes');
 const exportRoutes = require('./routes/export.routes');
 
 const app = express();
+
 /* CONFIGURA CORS Y LIMITE DE JSON PARA LOS FRONTENDS ESTATICOS */
-app.use(cors({ origin: true, credentials: false }));
+app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 /* SIRVE LOS FRONTENDS ESTATICOS DESDE EL MISMO BACKEND */
 app.use('/KAJA-FRONTED', express.static(path.join(__dirname, 'KAJA-FRONTED')));
 app.use('/LOGIN-KAJA', express.static(path.join(__dirname, 'LOGIN-KAJA')));
 
-app.use('/api', authRoutes);
+/* RUTAS DE LA API ORGANIZADAS */
+app.use('/api/auth', authRoutes);          // login en /api/auth/login
 app.use('/api/empresas', empresaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/roles', rolRoutes);
@@ -31,6 +33,7 @@ app.use('/api/categorias', categoriaRoutes);
 app.use('/api/ventas', ventaRoutes);
 app.use('/api/reportes', reporteRoutes);
 app.use('/api/exportaciones', exportRoutes);
+app.use('/api/productos', productoRoutes); // productos en /api/productos
 
 /* RUTA PRINCIPAL DEL SERVIDOR */
 app.get('/', (req, res) => {
@@ -42,15 +45,22 @@ app.get('/api/health', (req, res) => {
     res.json({ ok: true, servicio: 'kaja-server', hora: new Date().toISOString() });
 });
 
-/* RUTAS DE LA API DE PRODUCTOS */
-app.use('/api', productoRoutes);
-
-/* ESPACIO RESERVADO PARA CONEXION CON KAJA APP (MOVIL). DEJA LISTO EL PUENTE SIN ROMPER LO ACTUAL */
+/* ESPACIO RESERVADO PARA CONEXION CON KAJA APP (MOVIL) */
 app.get('/api/app/status', (req, res) => {
-    res.json({ ok: true, app: 'kaja-app', estado: 'proximamente', version: '1.0.0', endpoints: ['/api/app/status', '/api/app/sync'] });
+    res.json({
+        ok: true,
+        app: 'kaja-app',
+        estado: 'proximamente',
+        version: '1.0.0',
+        endpoints: ['/api/app/status', '/api/app/sync']
+    });
 });
 app.post('/api/app/sync', (req, res) => {
-    res.json({ ok: true, mensaje: 'SINCRONIZACION KAJA APP PENDIENTE DE ACTIVAR', recibido: req.body || {} });
+    res.json({
+        ok: true,
+        mensaje: 'SINCRONIZACION KAJA APP PENDIENTE DE ACTIVAR',
+        recibido: req.body || {}
+    });
 });
 
 const PORT = process.env.PORT || 3000;
