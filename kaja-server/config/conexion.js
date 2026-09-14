@@ -1,21 +1,20 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
 
 const conexion = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
+    port: process.env.MYSQLPORT
 });
 
 conexion.getConnection()
     .then((connection) => {
-        console.log('✅ Conectado a la base de datos KAJA');
+        console.log('✅ Conectado a la base de datos KAJA en Railway');
         connection.release();
     })
     .catch((error) => {
-        console.error('❌ Error al conectar con MySQL');
+        console.error('❌ Error al conectar con MySQL en Railway');
         console.error(error);
     });
 
