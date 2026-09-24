@@ -13,6 +13,7 @@ const categoriaRoutes = require('./routes/categoria.routes');
 const ventaRoutes = require('./routes/venta.routes');
 const reporteRoutes = require('./routes/reporte.routes');
 const exportRoutes = require('./routes/export.routes');
+const setupRoutes = require('./routes/setup.routes');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/ventas', ventaRoutes);
 app.use('/api/reportes', reporteRoutes);
 app.use('/api/exportaciones', exportRoutes);
 app.use('/api/productos', productoRoutes); // productos en /api/productos
+app.use('/api', setupRoutes);              // setup en /api/setup-database
 
 /* RUTA PRINCIPAL DEL SERVIDOR */
 app.get('/', (req, res) => {
@@ -70,3 +72,4 @@ app.listen(PORT, () => {
     console.log(`Frontend público en http://localhost:${PORT}/KAJA-FRONTED/`);
     console.log(`Panel interno en http://localhost:${PORT}/LOGIN-KAJA/`);
 });
+
