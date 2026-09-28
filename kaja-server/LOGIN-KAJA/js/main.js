@@ -2021,19 +2021,40 @@ function renderLogin() {
       event.preventDefault();
       const nit = companyNit.value.trim();
       const password = companyPassword.value.trim();
+
+      if (!nit || !password) {
+        toastKaja('NIT y contraseña son obligatorios', 'warn');
+        return;
+      }
+
+      const submitBtn = companyForm.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn ? submitBtn.textContent : 'Ingresar';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Autenticando...';
+      }
+
       try {
         const response = await KajaApi.companyLogin(nit, password);
+        localStorage.setItem('empresaSession', JSON.stringify(response.empresa));
+        toastKaja('✓ Empresa autenticada. Ingresando como usuario...', 'ok');
         state.companyValidated = true;
         state.loginMode = 'staff';
-        localStorage.setItem('empresaSession', JSON.stringify(response.empresa));
         companyMessage.textContent = 'Empresa autenticada. Puedes ingresar al backend con tu usuario.';
         companyMessage.className = 'login-message success';
         renderLogin();
       } catch (error) {
+        const mensaje = error.message || 'Credenciales de empresa incorrectas.';
+        toastKaja(mensaje, 'err');
         state.companyValidated = false;
         state.loginMode = 'company';
-        companyMessage.textContent = error.message || 'Credenciales de empresa incorrectas.';
+        companyMessage.textContent = mensaje;
         companyMessage.className = 'login-message error';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+        companyPassword.value = '';
       }
     });
   }
@@ -2051,6 +2072,18 @@ function renderLogin() {
       const role = staffRole.value;
       const password = staffPassword.value.trim();
 
+      if (!user || !password) {
+        toastKaja('Usuario y contraseña son obligatorios', 'warn');
+        return;
+      }
+
+      const submitBtn = staffForm.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn ? submitBtn.textContent : 'Ingresar';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Iniciando...';
+      }
+
       try {
         const authData = await KajaApi.login(user, password);
         const loggedUser = authData.usuario || {};
@@ -2062,12 +2095,21 @@ function renderLogin() {
         localStorage.setItem('token', authData.token);
         localStorage.setItem('kajaSessionUser', JSON.stringify(loggedUser));
 
-        const productosDesdeApi = await fetchProductosApi();
-        localStorage.setItem('kajaProductos', JSON.stringify(productosDesdeApi));
-        renderDashboard();
+        toastKaja(`¡Bienvenido ${loggedUser.nombre || user}!`, 'ok');
+
+        setTimeout(() => {
+          window.location.href = '/KAJA-FRONTED/';
+        }, 800);
       } catch (error) {
-        staffMessage.textContent = error.message || 'No se pudo iniciar sesión.';
+        const mensaje = error.message || 'No se pudo iniciar sesión.';
+        toastKaja(mensaje, 'err');
+        staffMessage.textContent = mensaje;
         staffMessage.className = 'login-message error';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+        staffPassword.value = '';
       }
     });
   }
