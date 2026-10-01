@@ -121,11 +121,6 @@ function renderApp() {
               <button class="primary-btn admin-btn" type="button">Ingresar a mi empresa</button>
               <button class="secondary-btn" type="button" onclick="document.getElementById('modulos').scrollIntoView({behavior:'smooth'})">Ver módulos</button>
             </div>
-
-            <div class="hero-badges">
-              <span class="badge"><i class="fa-solid fa-shield-halved"></i> Seguridad</span>
-              <span class="badge"><i class="fa-solid fa-boxes-stacked"></i> Inventario</span>
-            </div>
           </div>
 
           <div class="hero-panel reveal">
@@ -220,7 +215,7 @@ function renderApp() {
     </main>
 
     <footer>
-      <p>© 2026. Todos los derechos reservados.</p>
+      <p>© Kaja - 2026</p>
     </footer>
 
     <button id="kaja-chat-button" aria-label="Abrir Asistente KAJA">

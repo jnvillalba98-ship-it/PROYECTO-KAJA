@@ -7,12 +7,11 @@
 
 body {
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: block;
+  padding: 0;
   background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.12), transparent 28%),
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.10), transparent 24%),
     #020617;
   color: #f8fafc;
 }
@@ -20,22 +19,22 @@ body {
 .chat-container {
   position: fixed;
   right: 24px;
-  bottom: 100px;
-  width: 420px;
-  max-width: calc(100vw - 24px);
-  height: 600px;
+  bottom: 92px;
+  width: min(420px, calc(100vw - 24px));
+  height: min(70vh, 600px);
   display: flex;
   flex-direction: column;
   background: rgba(15, 23, 42, 0.96);
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.6), 0 0 30px rgba(56, 189, 248, 0.15);
+  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.62), 0 0 0 1px rgba(56, 189, 248, 0.12);
   opacity: 0;
   pointer-events: none;
   transform: translateY(20px) scale(0.98);
   transition: opacity 0.25s ease, transform 0.25s ease;
   z-index: 999;
+  backdrop-filter: blur(10px);
 }
 
 .chat-container.active {
@@ -243,38 +242,11 @@ body {
   box-shadow: 0 14px 24px rgba(250, 204, 21, 0.15);
 }
 
-#chatbot-button {
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  width: 64px;
-  height: 64px;
-  border: none;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #38bdf8, #facc15);
-  color: #020617;
-  font-size: 1.8rem;
-  cursor: pointer;
-  box-shadow: 0 16px 34px rgba(56, 189, 248, 0.32);
-  z-index: 998;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-#chatbot-button:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 20px 44px rgba(56, 189, 248, 0.4);
-}
-
 @media (max-width: 560px) {
   .chat-container {
     right: 12px;
-    bottom: 88px;
+    bottom: 18px;
     width: calc(100vw - 24px);
     height: min(78vh, 560px);
-  }
-
-  #chatbot-button {
-    right: 18px;
-    bottom: 18px;
   }
 }
