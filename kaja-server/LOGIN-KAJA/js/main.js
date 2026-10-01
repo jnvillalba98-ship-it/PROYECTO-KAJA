@@ -309,13 +309,13 @@ function renderDashboard() {
     <section class="dashboard">
       <aside class="sidebar">
         <div class="sidebar-brand">
-          <img src="../KAJA-FRONTED/assets/logo-kaja.png" class="sidebar-logo" alt="Logo KAJA">
+          <div class="brand-mark-solid" aria-label="KAJA"><i class="fa-solid fa-cubes-stacked"></i></div>
         </div>
 
         <div class="empresa-indicator">
           <span>Empresa activa</span>
           <div class="empresa-indicator-row">
-            <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo empresa" class="empresa-mini-logo">
+            <div class="mini-brand-mark neutral"><i class="fa-solid fa-building"></i></div>
             <strong>${getEmpresaLabel()}</strong>
           </div>
         </div>
@@ -332,7 +332,7 @@ function renderDashboard() {
 
           <div class="top-actions">
             <div class="empresa-badge">
-              <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo empresa" class="empresa-badge-logo">
+              <div class="mini-brand-mark neutral"><i class="fa-solid fa-store"></i></div>
               <div>
                 <span>Empresa activa</span>
                 <strong>${getEmpresaLabel()}</strong>
@@ -761,6 +761,7 @@ async function openProductModal(producto = null) {
   const categoriaOptions = categorias.map((categoria) => `
     <option value="${categoria.id}" ${Number(categoria.id) === Number(categoriaActual) ? 'selected' : ''}>${categoria.nombre}</option>
   `).join('');
+  const generatedProductCode = editing ? (producto?.codigo || '') : `PRD-${String(Date.now()).slice(-6)}`;
 
   const modalHtml = `
     <div class="modal fade show" tabindex="-1" style="display:block; background: rgba(15, 23, 42, 0.72);">
@@ -775,7 +776,7 @@ async function openProductModal(producto = null) {
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label">Código</label>
-                  <input type="text" class="form-control" name="codigo" value="${producto?.codigo || ''}" required>
+                  <input type="text" class="form-control" name="codigo" value="${generatedProductCode}" ${editing ? 'required' : 'readonly'}>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Nombre</label>
@@ -832,7 +833,7 @@ async function openProductModal(producto = null) {
     event.preventDefault();
     const form = event.currentTarget;
     const payload = {
-      codigo: form.codigo.value.trim(),
+      codigo: form.codigo.value.trim() || (editing ? '' : `PRD-${String(Date.now()).slice(-6)}`),
       nombre: form.nombre.value.trim(),
       categoria_id: Number(form.categoria.value || 0) || null,
       descripcion: form.descripcion.value.trim(),
@@ -841,8 +842,8 @@ async function openProductModal(producto = null) {
       activo: form.activo.checked ? 1 : 0
     };
 
-    if (!payload.codigo || !payload.nombre) {
-      alert('Completa código y nombre del producto');
+    if (!payload.nombre) {
+      alert('Completa el nombre del producto');
       return;
     }
 
@@ -1401,7 +1402,7 @@ function loadSection(section) {
         <div class="ticket-box">
           <div class="invoice-head">
             <div class="invoice-brand">
-              <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="ticket-logo" />
+              <div class="ticket-mark" aria-label="KAJA"><i class="fa-solid fa-cubes-stacked"></i></div>
               <div>
                 <h4>${emp.nombre}</h4>
                 <small>NIT: ${emp.nit} · ${emp.regimen}</small>
@@ -1974,7 +1975,7 @@ function renderLogin() {
 
         <div class="login-brand-bar">
           <div class="brand-mark">
-            <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="brand-mini-logo" />
+            <div class="brand-mark-icon" aria-label="KAJA"><i class="fa-solid fa-cubes-stacked"></i></div>
             <div>
               <span>KAJA</span>
               <strong>Gestión inteligente</strong>
@@ -1990,7 +1991,7 @@ function renderLogin() {
           <div class="login-grid split-login">
             <div class="login-card company-card selection-card" data-login-type="company">
               <div class="login-card-identity company-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo empresa" class="card-logo" />
+                <div class="card-mark company-mark"><i class="fa-solid fa-building"></i></div>
                 <div>
                   <span>Empresa</span>
                   <strong>${getActiveCompanyLabel()}</strong>
