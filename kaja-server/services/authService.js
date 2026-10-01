@@ -3,9 +3,27 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const conexion = require('../config/conexion');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kaja_secreto_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_kaja_local_secret_change_me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 const CREDENCIALES_INVALIDAS = 'Usuario o contraseña incorrectos';
+
+const ALL_PERMISSIONS = [
+    'EMPRESA_VER', 'EMPRESA_CREAR', 'EMPRESA_EDITAR',
+    'USUARIO_VER', 'USUARIO_CREAR', 'USUARIO_EDITAR', 'USUARIO_DESACTIVAR',
+    'CATEGORIA_VER', 'CATEGORIA_CREAR', 'CATEGORIA_EDITAR', 'CATEGORIA_DESACTIVAR',
+    'PRODUCTO_VER', 'PRODUCTO_CREAR', 'PRODUCTO_EDITAR', 'PRODUCTO_DESACTIVAR',
+    'VENTA_CREAR', 'VENTA_VER', 'VENTA_ANULAR',
+    'REPORTE_VER', 'REPORTE_EXPORTAR'
+];
+
+const DEFAULT_ROLE_PERMISSIONS = {
+    ADMINISTRADOR: [...ALL_PERMISSIONS],
+    DESARROLLADOR: [...ALL_PERMISSIONS],
+    DEVELOPER: [...ALL_PERMISSIONS],
+    EDITOR: [...ALL_PERMISSIONS],
+    CAJERO: ['PRODUCTO_VER', 'VENTA_CREAR', 'VENTA_VER', 'REPORTE_VER'],
+    INVENTARIO: ['PRODUCTO_VER', 'PRODUCTO_CREAR', 'PRODUCTO_EDITAR', 'PRODUCTO_DESACTIVAR', 'CATEGORIA_VER', 'CATEGORIA_CREAR', 'CATEGORIA_EDITAR', 'CATEGORIA_DESACTIVAR']
+};
 
 /* VERIFICA HASHES LEGADOS DE DJANGO (pbkdf2_sha256) PARA USUARIOS MIGRADOS */
 const parseDjangoHash = (hash) => {
@@ -40,15 +58,43 @@ const verifyPassword = async (password, storedHash) => {
 
 /* OBTIENE LOS PERMISOS DEL ROL PARA QUE permisoMiddleware PUEDA VALIDARLOS */
 const obtenerPermisos = async (rolId, rolNombre) => {
+    const roleName = String(rolNombre || '').trim().toUpperCase();
     const [rows] = await conexion.query(
         `SELECT DISTINCT p.codigo
          FROM rol_permisos rp
          INNER JOIN permisos p ON p.id = rp.permiso_id
          INNER JOIN roles r ON r.id = rp.rol_id
          WHERE rp.rol_id = ? OR r.nombre = ?`,
-        [rolId || null, rolNombre || null]
+        [rolId || null, roleName || null]
     );
-    return rows.map((row) => row.codigo);
+
+    const permisos = rows.map((row) => row.codigo);
+    const defaultPermisos = DEFAULT_ROLE_PERMISSIONS[roleName] || [];
+    if (!defaultPermisos.length) return permisos;
+
+    const merged = new Set(permisos);
+    defaultPermisos.forEach((permiso) => merged.add(permiso));
+
+    const roleId = rolId || (roleName ? (await conexion.query('SELECT id FROM roles WHERE nombre = ? LIMIT 1', [roleName]))[0]?.[0]?.id : null);
+    if (roleId && defaultPermisos.some((permiso) => !merged.has(permiso))) {
+        // no-op: el Set ya incluye los permisos por defecto; si faltan filas en la tabla, se insertan a continuación
+    }
+
+    if (roleId) {
+        for (const permiso of defaultPermisos) {
+            if (!permisos.includes(permiso)) {
+                await conexion.query(
+                    `INSERT IGNORE INTO rol_permisos (rol_id, permiso_id)
+                     SELECT ?, p.id
+                     FROM permisos p
+                     WHERE p.codigo = ?`,
+                    [roleId, permiso]
+                );
+            }
+        }
+    }
+
+    return Array.from(merged);
 };
 
 const login = async (usuario, password) => {

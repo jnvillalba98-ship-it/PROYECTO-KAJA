@@ -1,8 +1,11 @@
 const express = require('express');
-const { login, companyLogin, me, changePassword } = require('../controllers/authController');
+const { login, companyLogin, register, me, changePassword } = require('../controllers/authController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
+
+/* REGISTRO PÚBLICO: EMPRESA + USUARIO ADMINISTRADOR */
+router.post('/register', register);
 
 /* LOGIN DE EMPRESA POR NIT (PRIMER PASO DEL PANEL INTERNO) */
 router.post('/company-login', companyLogin);

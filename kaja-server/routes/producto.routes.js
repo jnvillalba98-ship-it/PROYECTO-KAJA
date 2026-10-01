@@ -7,16 +7,16 @@ const {
     eliminarProducto
 } = require('../controllers/producto.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
-const rolMiddleware = require('../middlewares/rolMiddleware');
+const requirePermission = require('../middlewares/permisoMiddleware');
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get('/productos', rolMiddleware('ADMINISTRADOR', 'USUARIO'), obtenerProductos);
-router.get('/productos/:id', rolMiddleware('ADMINISTRADOR', 'USUARIO'), obtenerProductoPorId);
-router.post('/productos', rolMiddleware('ADMINISTRADOR', 'USUARIO'), crearProducto);
-router.put('/productos/:id', rolMiddleware('ADMINISTRADOR', 'USUARIO'), actualizarProducto);
-router.delete('/productos/:id', rolMiddleware('ADMINISTRADOR', 'USUARIO'), eliminarProducto);
+router.get('/', requirePermission('PRODUCTO_VER'), obtenerProductos);
+router.get('/:id', requirePermission('PRODUCTO_VER'), obtenerProductoPorId);
+router.post('/', requirePermission('PRODUCTO_CREAR'), crearProducto);
+router.put('/:id', requirePermission('PRODUCTO_EDITAR'), actualizarProducto);
+router.delete('/:id', requirePermission('PRODUCTO_DESACTIVAR'), eliminarProducto);
 
 module.exports = router;

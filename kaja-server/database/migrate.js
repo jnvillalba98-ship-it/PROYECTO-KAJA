@@ -1,6 +1,5 @@
 const fs = require('fs/promises');
 const path = require('path');
-const bcrypt = require('bcryptjs');
 const conexion = require('../config/conexion');
 
 const MIGRATION_ID = '001_business_core';
@@ -30,6 +29,9 @@ const PERMISSIONS = [
 
 const ROLE_PERMISSIONS = {
     ADMINISTRADOR: PERMISSIONS.map(([codigo]) => codigo),
+    DESARROLLADOR: PERMISSIONS.map(([codigo]) => codigo),
+    EDITOR: PERMISSIONS.map(([codigo]) => codigo),
+    DEVELOPER: PERMISSIONS.map(([codigo]) => codigo),
     CAJERO: ['PRODUCTO_VER', 'VENTA_CREAR', 'VENTA_VER', 'REPORTE_VER'],
     INVENTARIO: ['PRODUCTO_VER', 'PRODUCTO_CREAR', 'PRODUCTO_EDITAR', 'PRODUCTO_DESACTIVAR', 'CATEGORIA_VER', 'CATEGORIA_CREAR', 'CATEGORIA_EDITAR', 'CATEGORIA_DESACTIVAR']
 };
@@ -118,14 +120,17 @@ async function run() {
 
         await connection.query(`
             ALTER TABLE usuarios
-            MODIFY COLUMN rol ENUM('ADMINISTRADOR','CAJERO','INVENTARIO') NOT NULL DEFAULT 'CAJERO'
+            MODIFY COLUMN rol ENUM('ADMINISTRADOR','CAJERO','INVENTARIO','DESARROLLADOR','EDITOR','DEVELOPER') NOT NULL DEFAULT 'CAJERO'
         `);
 
         await connection.query(`
             INSERT IGNORE INTO roles (nombre, descripcion)
             VALUES ('ADMINISTRADOR', 'Acceso completo al sistema'),
                    ('CAJERO', 'Operación de ventas y caja'),
-                   ('INVENTARIO', 'Gestión de productos y categorías')
+                   ('INVENTARIO', 'Gestión de productos y categorías'),
+                   ('DESARROLLADOR', 'Superusuario con acceso total al backend'),
+                   ('EDITOR', 'Editor con permisos administrativos amplios'),
+                   ('DEVELOPER', 'Alias de desarrollador y mantenimiento técnico')
         `);
 
         await seedPermissions(connection);
@@ -144,14 +149,6 @@ async function run() {
             SET u.legacy_auth_user_id = a.id
             WHERE u.legacy_auth_user_id IS NULL
         `);
-
-        const demoCompanyPassword = await bcrypt.hash('Kaja123', 10);
-        await connection.query(
-            `UPDATE empresas
-             SET password_hash = ?
-             WHERE password_hash IS NULL OR password_hash = ''`,
-            [demoCompanyPassword]
-        );
 
         await connection.query(`
             INSERT IGNORE INTO categorias (empresa_id, nombre, activo)

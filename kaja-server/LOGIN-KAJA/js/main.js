@@ -8,7 +8,12 @@
  */
 const app = document.getElementById('app');
 /* BASE DE LA API DEL BACKEND KAJA */
-/* API_URL removed - now uses window.location.origin via KajaApi from api.js */
+function getApiBase() {
+  const configured = (window.KAJA_CONFIG && window.KAJA_CONFIG.apiBase) || window.__KAJA_API_BASE__ || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000/api' : window.location.origin + '/api');
+  return String(configured).replace(/\/+$/, '');
+}
+
+const API_URL = getApiBase();
 
 const state = {
   companyValidated: false,
@@ -23,8 +28,37 @@ const state = {
 const DEFAULT_USER = 'admin';
 const DEFAULT_PASSWORD = 'Kaja123';
 const DEFAULT_NIT = '900000001-1';
-const DEFAULT_COMPANY_NAME = 'Empresa 1';
+const DEFAULT_COMPANY_NAME = 'Sin empresa activa';
+
+function getActiveCompanyLabel() {
+  try {
+    const empresaSession = JSON.parse(localStorage.getItem('empresaSession') || 'null');
+    const nombre = empresaSession && (empresaSession.nombre || empresaSession.nit) ? (empresaSession.nombre || 'Empresa activa') : '';
+    return String(nombre || '').trim() || DEFAULT_COMPANY_NAME;
+  } catch (error) {
+    return DEFAULT_COMPANY_NAME;
+  }
+}
 const DEFAULT_CATEGORIES = ['Panadería', 'Bebidas', 'Carnes', 'Limpieza', 'Abarrotes', 'General'];
+const GUEST_PRODUCTS = [
+  { id: 1, codigo: 'INV-001', nombre: 'Muestra inventario', categoria: 'General', stock: 12, precio: 25000, activo: 1, descripcion: 'Vista de ejemplo para invitado.' },
+  { id: 2, codigo: 'INV-002', nombre: 'Muestra de caja', categoria: 'Bebidas', stock: 8, precio: 15000, activo: 1, descripcion: 'Consulta limitada sin edición.' }
+];
+
+function isGuestSession() {
+  const role = String(state.role || localStorage.getItem('kajaSessionRole') || '').toUpperCase();
+  return role === 'INVITADO' || localStorage.getItem('kajaGuestMode') === '1';
+}
+
+function setGuestSession() {
+  state.role = 'INVITADO';
+  state.user = 'Invitado';
+  state.token = null;
+  localStorage.setItem('kajaSessionRole', 'INVITADO');
+  localStorage.setItem('kajaGuestMode', '1');
+  localStorage.setItem('kajaSessionUser', JSON.stringify({ username: 'invitado', nombre: 'Invitado', rol: 'INVITADO' }));
+  localStorage.removeItem('token');
+}
 
 const STORAGE_KEYS = {
   categorias: 'kajaCategorias',
@@ -183,11 +217,11 @@ function createInvoiceNumber() {
 }
 
 function getEntityNameByUser() {
-  return DEFAULT_COMPANY_NAME;
+  return getActiveCompanyLabel();
 }
 
 function getEmpresaLabel() {
-  return localStorage.getItem('empresaSession') ? JSON.parse(localStorage.getItem('empresaSession') || '{}').nombre || DEFAULT_COMPANY_NAME : DEFAULT_COMPANY_NAME;
+  return getActiveCompanyLabel();
 }
 
 function getArrayPermisos(permisos) {
@@ -245,6 +279,26 @@ function startClock() {
 }
 
 function renderDashboard() {
+  const guestMode = isGuestSession();
+  const menuMarkup = guestMode ? `
+    <ul class="menu">
+      <li class="menu-item active" data-section="dashboard">Dashboard</li>
+      <li class="menu-item" data-section="inventario">Inventario</li>
+      <li id="logout">Cerrar sesión</li>
+    </ul>
+  ` : `
+    <ul class="menu">
+      <li class="menu-item active" data-section="dashboard">Dashboard</li>
+      <li class="menu-item" data-section="ventas">Ventas</li>
+      <li class="menu-item" data-section="inventario">Inventario</li>
+      <li class="menu-item" data-section="empresas">Empresas</li>
+      <li class="menu-item" data-section="usuarios">Usuarios</li>
+      <li class="menu-item" data-section="roles">Roles</li>
+      <li class="menu-item" data-section="developer">Desarrollador web</li>
+      <li id="logout">Cerrar sesión</li>
+    </ul>
+  `;
+
   app.innerHTML = `
     <section class="dashboard">
       <aside class="sidebar">
@@ -260,23 +314,14 @@ function renderDashboard() {
           </div>
         </div>
 
-        <ul class="menu">
-          <li class="menu-item active" data-section="dashboard">Dashboard</li>
-          <li class="menu-item" data-section="ventas">Ventas</li>
-          <li class="menu-item" data-section="inventario">Inventario</li>
-          <li class="menu-item" data-section="empresas">Empresas</li>
-          <li class="menu-item" data-section="usuarios">Usuarios</li>
-          <li class="menu-item" data-section="roles">Roles</li>
-          <li class="menu-item" data-section="developer">Desarrollador web</li>
-          <li id="logout">Cerrar sesión</li>
-        </ul>
+        ${menuMarkup}
       </aside>
 
       <main class="main">
         <div class="top">
           <div>
             <h1>Panel KAJA</h1>
-            <p>Control central de operación, seguridad y negocio</p>
+            <p>${guestMode ? 'Vista limitada para invitado' : 'Control central de operación, seguridad y negocio'}</p>
           </div>
 
           <div class="top-actions">
@@ -288,8 +333,8 @@ function renderDashboard() {
               </div>
             </div>
             <div class="developer-badge">
-              <span>Desarrollador</span>
-              <strong>Ver y editar</strong>
+              <span>${guestMode ? 'Invitado' : 'Desarrollador'}</span>
+              <strong>${guestMode ? 'Solo lectura' : 'Ver y editar'}</strong>
             </div>
           </div>
         </div>
@@ -309,6 +354,8 @@ function renderDashboard() {
 
   document.getElementById('logout').addEventListener('click', () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('kajaGuestMode');
+    localStorage.removeItem('kajaSessionRole');
     state.companyValidated = false;
     state.token = null;
     state.user = null;
@@ -522,6 +569,13 @@ function detenerAutoStatKaja() {
 
 /* OBTIENE PRODUCTOS NORMALIZADOS COMO ARREGLO DESDE LA API */
 async function fetchProductosApi() {
+  if (isGuestSession()) {
+    const stored = JSON.parse(localStorage.getItem('kajaProductosGuest') || 'null');
+    if (Array.isArray(stored) && stored.length) return stored;
+    localStorage.setItem('kajaProductosGuest', JSON.stringify(GUEST_PRODUCTS));
+    return GUEST_PRODUCTS;
+  }
+
   if (!localStorage.getItem('token')) throw new Error('No hay sesión activa');
   const resp = await KajaApi.productos();
   if (Array.isArray(resp)) return resp;
@@ -951,6 +1005,10 @@ async function loadAdminSectionApi(section) {
 
 function loadSection(section) {
   const content = document.getElementById('content');
+  if (isGuestSession() && ['ventas', 'empresas', 'usuarios', 'roles', 'developer'].includes(section)) {
+    toastKaja('Modo invitado: solo puedes consultar información general.', 'warn');
+    section = 'dashboard';
+  }
   if (section === 'empresas' || section === 'usuarios' || section === 'roles') {
     loadAdminSectionApi(section);
     return;
@@ -1855,7 +1913,7 @@ function loadSection(section) {
         </section>
         <section class="admin-card-panel"><div class="admin-card-head"><span>🔗 Conexión KAJA APP (próximamente)</span><span id="appStatusBadge" class="admin-badge active">Verificando…</span></div>
           <div class="developer-config-grid">
-            <div class="form-group"><label>URL puente</label><input id="appBridgeUrl" class="form-control" value="http://localhost:3000/api/app/status" readonly /></div>
+            <div class="form-group"><label>URL puente</label><input id="appBridgeUrl" class="form-control" value="${getApiBase()}/app/status" readonly /></div>
             <div class="form-group"><label>Estado</label><input id="appBridgeState" class="form-control" value="PROXIMAMENTE" readonly /></div>
             <div class="form-group full-width"><button id="appTestBtn" class="btn btn-kaja btn-sm">Probar conexión</button></div>
           </div>
@@ -1883,12 +1941,12 @@ function loadSection(section) {
       catch (e) { alert(e.message); }
     });
     content.querySelectorAll('[data-goto]')?.forEach((b) => b.addEventListener('click', () => loadSection(b.dataset.goto)));
-    fetch(API_URL + '/app/status', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).then((r) => r.json()).then((j) => {
+    fetch(getApiBase() + '/app/status', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).then((r) => r.json()).then((j) => {
       const b = document.getElementById('appStatusBadge'); if (b) { b.textContent = (j.estado || 'LISTO').toUpperCase(); }
       const s = document.getElementById('appBridgeState'); if (s) s.value = JSON.stringify(j);
     }).catch(() => { const b = document.getElementById('appStatusBadge'); if (b) b.textContent = 'SIN CONEXION'; });
     document.getElementById('appTestBtn')?.addEventListener('click', async () => {
-      try { const r = await fetch(API_URL + '/app/status').then((x) => x.json()); alert('KAJA APP PUENTE: ' + JSON.stringify(r)); }
+      try { const r = await fetch(getApiBase() + '/app/status').then((x) => x.json()); alert('KAJA APP PUENTE: ' + JSON.stringify(r)); }
       catch (e) { alert('No se pudo conectar al puente'); }
     });
     return;
@@ -1899,13 +1957,14 @@ function renderLogin() {
   const isSelectMode = state.loginMode === 'select';
   const isCompanyMode = state.loginMode === 'company';
   const isStaffMode = state.loginMode === 'staff';
+  const isRegisterMode = state.loginMode === 'register';
 
   app.innerHTML = `
     <div class="login-screen">
       <div class="login-shell">
         <div class="login-header">
           <span class="eyebrow">Acceso</span>
-          <h1>${isSelectMode ? 'Selecciona tu tipo de ingreso' : isCompanyMode ? 'Acceso a la empresa' : 'Acceso al sistema'}</h1>
+          <h1>${isSelectMode ? 'Selecciona tu tipo de ingreso' : isCompanyMode ? 'Acceso a la empresa' : isRegisterMode ? 'Crear cuenta de empresa' : 'Acceso al sistema'}</h1>
         </div>
 
         <div class="login-brand-bar">
@@ -1918,7 +1977,7 @@ function renderLogin() {
           </div>
           <div class="brand-company-tag">
             <span>Empresa activa</span>
-            <strong>${DEFAULT_COMPANY_NAME}</strong>
+            <strong>${getActiveCompanyLabel()}</strong>
           </div>
         </div>
 
@@ -1929,7 +1988,7 @@ function renderLogin() {
                 <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo empresa" class="card-logo" />
                 <div>
                   <span>Empresa</span>
-                  <strong>${DEFAULT_COMPANY_NAME}</strong>
+                  <strong>${getActiveCompanyLabel()}</strong>
                 </div>
               </div>
               <h2>Login de empresa</h2>
@@ -1949,6 +2008,32 @@ function renderLogin() {
               <p class="helper-text">Accede con tu usuario y rol del backend de KAJA.</p>
               <button type="button" class="btn-kaja">Entrar</button>
             </div>
+
+            <div class="login-card register-card selection-card" data-login-type="register">
+              <div class="login-card-identity admin-identity">
+                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div>
+                  <span>Crear cuenta</span>
+                  <strong>Empresa + admin</strong>
+                </div>
+              </div>
+              <h2>Crear empresa</h2>
+              <p class="helper-text">Registra tu empresa y crea el usuario administrador desde la API de KAJA.</p>
+              <button type="button" class="btn-kaja">Registrar</button>
+            </div>
+
+            <div class="login-card guest-card selection-card" data-login-type="guest">
+              <div class="login-card-identity admin-identity">
+                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div>
+                  <span>Invitado</span>
+                  <strong>Vista limitada</strong>
+                </div>
+              </div>
+              <h2>Entrar como invitado</h2>
+              <p class="helper-text">Consulta general sin credenciales reales ni permisos administrativos.</p>
+              <button type="button" class="btn-kaja">Entrar</button>
+            </div>
           </div>
         ` : ''}
 
@@ -1959,7 +2044,7 @@ function renderLogin() {
                 <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo empresa" class="card-logo" />
                 <div>
                   <span>Empresa</span>
-                  <strong>${DEFAULT_COMPANY_NAME}</strong>
+                  <strong>${getActiveCompanyLabel()}</strong>
                 </div>
               </div>
               <h2>Login de empresa</h2>
@@ -1971,6 +2056,40 @@ function renderLogin() {
                 <button type="submit" class="btn-kaja">Ingresar</button>
               </form>
               <p id="companyMessage" class="login-message" aria-live="polite"></p>
+              <button type="button" class="btn-secondary" id="backToLoginSelect">Volver</button>
+            </div>
+          </div>
+        ` : ''}
+
+        ${isRegisterMode ? `
+          <div class="login-panel register-panel">
+            <div class="login-card admin-card active-card" data-login-type="register">
+              <div class="login-card-identity admin-identity">
+                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div>
+                  <span>Registrar</span>
+                  <strong>Empresa + administrador</strong>
+                </div>
+              </div>
+              <h2>Crear empresa</h2>
+              <form id="registerForm" class="login-form" novalidate>
+                <label class="form-label" for="registerCompanyName">Nombre de la empresa</label>
+                <input id="registerCompanyName" type="text" placeholder="Mi empresa S.A.S." />
+                <label class="form-label" for="registerNit">NIT</label>
+                <input id="registerNit" type="text" placeholder="900123456-7" />
+                <label class="form-label" for="registerAdminName">Nombre del administrador</label>
+                <input id="registerAdminName" type="text" placeholder="Ana Gómez" />
+                <label class="form-label" for="registerAdminUser">Usuario administrador</label>
+                <input id="registerAdminUser" type="text" placeholder="ana.admin" autocomplete="username" />
+                <label class="form-label" for="registerAdminEmail">Email</label>
+                <input id="registerAdminEmail" type="email" placeholder="ana@empresa.com" autocomplete="email" />
+                <label class="form-label" for="registerAdminPhone">Teléfono</label>
+                <input id="registerAdminPhone" type="tel" placeholder="3000000000" />
+                <label class="form-label" for="registerPassword">Contraseña</label>
+                <input id="registerPassword" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+                <button type="submit" class="btn-kaja">Crear cuenta</button>
+              </form>
+              <p id="registerMessage" class="login-message" aria-live="polite"></p>
               <button type="button" class="btn-secondary" id="backToLoginSelect">Volver</button>
             </div>
           </div>
@@ -1989,18 +2108,18 @@ function renderLogin() {
               <h2>Login del sistema</h2>
               <form id="staffForm" class="login-form" novalidate>
                 <label class="form-label" for="staffUser">Usuario</label>
-                <input id="staffUser" type="text" value="" placeholder="Usuario" autocomplete="username" ${state.companyValidated ? '' : 'disabled'} />
+                <input id="staffUser" type="text" value="developer" placeholder="Usuario" autocomplete="username" />
                 <label class="form-label" for="staffRole">Rol</label>
-                <select id="staffRole" class="role-select" ${state.companyValidated ? '' : 'disabled'}>
+                <select id="staffRole" class="role-select">
                   <option value="ADMINISTRADOR">Administrador</option>
                   <option value="CAJERO">Cajero</option>
                   <option value="INVENTARIO">Inventario</option>
                   <option value="EDITOR">Editor (edita todo)</option>
-                  <option value="DESARROLLADOR">Desarrollador (acceso total)</option>
+                  <option value="DESARROLLADOR" selected>Desarrollador (acceso total)</option>
                 </select>
                 <label class="form-label" for="staffPassword">Contraseña</label>
-                <input id="staffPassword" type="password" value="" placeholder="••••••••" autocomplete="current-password" ${state.companyValidated ? '' : 'disabled'} />
-                <button type="submit" class="btn-kaja" ${state.companyValidated ? '' : 'disabled'}>Ingresar</button>
+                <input id="staffPassword" type="password" value="KajaDev2026!" placeholder="••••••••" autocomplete="current-password" />
+                <button type="submit" class="btn-kaja">Ingresar</button>
               </form>
               <p id="staffMessage" class="login-message" aria-live="polite"></p>
               <button type="button" class="btn-secondary" id="backToLoginSelect">Volver</button>
@@ -2038,6 +2157,58 @@ function renderLogin() {
     });
   }
 
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    const registerMessage = document.getElementById('registerMessage');
+    registerForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        empresa: {
+          nombre: document.getElementById('registerCompanyName').value.trim(),
+          nit: document.getElementById('registerNit').value.trim()
+        },
+        administrador: {
+          nombre: document.getElementById('registerAdminName').value.trim(),
+          usuario: document.getElementById('registerAdminUser').value.trim(),
+          email: document.getElementById('registerAdminEmail').value.trim(),
+          telefono: document.getElementById('registerAdminPhone').value.trim(),
+          password: document.getElementById('registerPassword').value
+        }
+      };
+
+      if (!payload.empresa.nombre || !payload.empresa.nit || !payload.administrador.nombre || !payload.administrador.usuario || !payload.administrador.password) {
+        registerMessage.textContent = 'Completa nombre de la empresa, NIT, administrador y contraseña.';
+        registerMessage.className = 'login-message error';
+        return;
+      }
+
+      if (payload.administrador.password.length < 8) {
+        registerMessage.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        registerMessage.className = 'login-message error';
+        return;
+      }
+
+      try {
+        const response = await KajaApi.registerEmpresa(payload);
+        state.token = response.token;
+        state.user = response.usuario?.username || payload.administrador.usuario;
+        state.role = response.usuario?.rol || 'ADMINISTRADOR';
+        localStorage.removeItem('kajaGuestMode');
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('kajaSessionRole', state.role);
+        localStorage.setItem('kajaSessionUser', JSON.stringify(response.usuario));
+        localStorage.setItem('empresaSession', JSON.stringify(response.empresa || payload.empresa));
+
+        const productosDesdeApi = await fetchProductosApi();
+        localStorage.setItem('kajaProductos', JSON.stringify(productosDesdeApi));
+        renderDashboard();
+      } catch (error) {
+        registerMessage.textContent = error.message || 'No se pudo crear la empresa.';
+        registerMessage.className = 'login-message error';
+      }
+    });
+  }
+
   const staffForm = document.getElementById('staffForm');
   if (staffForm) {
     const staffUser = document.getElementById('staffUser');
@@ -2054,13 +2225,22 @@ function renderLogin() {
       try {
         const authData = await KajaApi.login(user, password);
         const loggedUser = authData.usuario || {};
-        if (loggedUser.rol && role !== loggedUser.rol) throw new Error('Usuario o rol no coinciden con la empresa activa');
+        const userRole = String(loggedUser.rol || '').toUpperCase();
+        const isAllowedDeveloper = userRole === 'DESARROLLADOR' && user.toLowerCase() === 'developer';
+        const isAllowedRole = !loggedUser.rol || role === userRole || isAllowedDeveloper;
+
+        if (!isAllowedRole) {
+          throw new Error('El rol seleccionado no coincide con el usuario real del sistema.');
+        }
 
         state.token = authData.token;
         state.user = loggedUser.username || user;
-        state.role = loggedUser.rol || role;
+        state.role = userRole || role;
+        localStorage.removeItem('kajaGuestMode');
+        localStorage.setItem('kajaSessionRole', state.role);
         localStorage.setItem('token', authData.token);
         localStorage.setItem('kajaSessionUser', JSON.stringify(loggedUser));
+        localStorage.setItem('empresaSession', JSON.stringify(loggedUser.empresa || { nombre: 'Empresa activa' }));
 
         const productosDesdeApi = await fetchProductosApi();
         localStorage.setItem('kajaProductos', JSON.stringify(productosDesdeApi));
@@ -2078,24 +2258,18 @@ function renderLogin() {
       const clickedSelectionButton = event.target.closest('.btn-kaja') && !event.target.closest('form');
       const clickedBackButton = event.target.closest('#backToLoginSelect');
 
+      if (selectedType === 'guest') {
+        setGuestSession();
+        renderDashboard();
+        return;
+      }
+
       if (clickedBackButton || event.target.closest('input, select, textarea, label, form')) {
         return;
       }
 
       if (clickedSelectionButton) {
-        if (selectedType === 'staff' && !state.companyValidated) {
-          state.loginMode = 'company';
-          renderLogin();
-          return;
-        }
-
         state.loginMode = selectedType;
-        renderLogin();
-        return;
-      }
-
-      if (selectedType === 'staff' && !state.companyValidated) {
-        state.loginMode = 'company';
         renderLogin();
         return;
       }

@@ -1,5 +1,10 @@
 window.KajaApi = (() => {
-  const API_URL = window.location.origin + "/api";
+  const getApiBase = () => {
+    const configured = (window.KAJA_CONFIG && window.KAJA_CONFIG.apiBase) || window.__KAJA_API_BASE__ || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000/api' : window.location.origin + '/api');
+    return String(configured).replace(/\/+$/, '');
+  };
+
+  const API_URL = getApiBase();
 
   async function request(path, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -50,6 +55,7 @@ window.KajaApi = (() => {
   return {
     login: (usuario, password) => json('/auth/login', 'POST', { usuario, password }),
     companyLogin: (nit, password) => json('/auth/company-login', 'POST', { nit, password }),
+    registerEmpresa: (payload) => json('/auth/register', 'POST', payload),
     me: () => json('/auth/me'),
     changePassword: (password) => json('/auth/password', 'PATCH', { password }),
 
@@ -93,7 +99,7 @@ window.KajaApi = (() => {
 
 /* PUENTE FRONTEND-BACKEND: VERIFICA SALUD DEL SERVIDOR Y SINCRONIZA PRODUCTOS Y CATEGORIAS AL CACHE LOCAL */
 (() => {
-    const API_BASE = window.location.origin + "/api";
+    const API_BASE = getApiBase();
   async function health() {
     try {
       const r = await fetch(`${API_BASE}/health`);

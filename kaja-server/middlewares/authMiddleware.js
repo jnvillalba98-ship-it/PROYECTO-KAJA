@@ -1,10 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kaja_secreto_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_kaja_local_secret_change_me';
 
 const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers.authorization || '';
-    const [scheme, token] = authHeader.split(' ');
+    const authHeader = String(req.headers.authorization || '');
+    const parts = authHeader.trim().split(' ');
+    const scheme = parts[0];
+    const token = parts.slice(1).join(' ');
 
     if (scheme !== 'Bearer' || !token) {
         return res.status(401).json({ mensaje: 'Token requerido' });
