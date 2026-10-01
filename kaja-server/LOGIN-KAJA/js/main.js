@@ -95,6 +95,21 @@ function getCategoriasDisponibles() {
   return getStorageCollection(STORAGE_KEYS.categorias, DEFAULT_CATEGORIES);
 }
 
+function normalizeCategoriaList(raw) {
+  const list = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw && raw.data)
+      ? raw.data
+      : Array.isArray(raw && raw.rows)
+        ? raw.rows
+        : [];
+
+  return list
+    .map((categoria) => (typeof categoria === 'string' ? categoria : (categoria && (categoria.nombre || categoria.categoria || categoria.label))) || '')
+    .filter(Boolean)
+    .map((categoria) => String(categoria).trim());
+}
+
 function guardarCategorias(categorias) {
   const limpia = [...new Set((categorias || []).map((categoria) => String(categoria).trim()).filter(Boolean))];
   const finalCategorias = limpia.length ? limpia : [...DEFAULT_CATEGORIES];
@@ -717,7 +732,14 @@ function openCategoryManager() {
 }
 
 async function openCategoryManagerApi() {
-  const categorias = await KajaApi.categorias({ activo: 1 });
+  let categorias = [];
+  try {
+    categorias = normalizeCategoriaList(await KajaApi.categorias({ activo: 1 }));
+  } catch (error) {
+    categorias = getCategoriasDisponibles();
+  }
+  if (!categorias.length) categorias = getCategoriasDisponibles();
+
   const modalHtml = `
     <div class="modal fade show" tabindex="-1" style="display:block; background: rgba(15,23,42,0.72);">
       <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -814,12 +836,18 @@ async function openCategoryManagerApi() {
 
 async function openProductModal(producto = null) {
   const editing = Boolean(producto && producto.id);
-  const respCat = await KajaApi.categorias({ activo: 1 });
-  const categorias = Array.isArray(respCat) ? respCat : (respCat && respCat.data ? respCat.data : []);
-  const categoriaActual = producto?.categoria_id || categorias.find((categoria) => categoria.nombre === producto?.categoria)?.id || categorias[0]?.id || '';
+  let categorias = [];
+  try {
+    categorias = normalizeCategoriaList(await KajaApi.categorias({ activo: 1 }));
+  } catch (error) {
+    categorias = getCategoriasDisponibles();
+  }
+  if (!categorias.length) categorias = getCategoriasDisponibles();
+
+  const categoriaActual = producto?.categoria_id || categorias.find((categoria) => String(categoria).toLowerCase() === String(producto?.categoria || '').toLowerCase()) || categorias[0] || '';
   const categoriaOptions = categorias.map((categoria) => `
-    <option value="${categoria.id}" ${Number(categoria.id) === Number(categoriaActual) ? 'selected' : ''}>${categoria.nombre}</option>
-  `).join('');
+    <option value="${String(categoria).toLowerCase().replace(/\s+/g, '-')}" ${String(categoria).toLowerCase() === String(categoriaActual || '').toLowerCase() ? 'selected' : ''}>${categoria}</option>
+  `).join('') || '<option value="">Sin categorías</option>';
   const generatedProductCode = editing ? (producto?.codigo || '') : `PRD-${String(Date.now()).slice(-6)}`;
 
   const modalHtml = `
@@ -846,6 +874,7 @@ async function openProductModal(producto = null) {
                   <select class="form-control" name="categoria">
                     ${categoriaOptions || '<option value="General">General</option>'}
                   </select>
+                  <input type="text" class="form-control mt-2" name="categoria_manual" placeholder="Escribe una categoría manual si no aparece aquí" />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Estado</label>
@@ -891,10 +920,28 @@ async function openProductModal(producto = null) {
   modal.querySelector('#productForm').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
+    const manualCategory = String(form.categoria_manual.value || '').trim();
+    const selectedCategory = form.categoria.value;
+    const categoriaNombre = manualCategory || (selectedCategory && selectedCategory !== '' ? selectedCategory.replace(/-/g, ' ') : 'General');
+    const normalizedCategory = categoriaNombre.trim();
+
+    let categoriaId = null;
+    if (manualCategory) {
+      const nextCategories = [...new Set([...getCategoriasDisponibles(), manualCategory])];
+      guardarCategorias(nextCategories);
+      try {
+        const createdCategory = await KajaApi.crearCategoria(manualCategory, inferCategoryIcon(manualCategory));
+        categoriaId = Number(createdCategory?.id || 0) || null;
+      } catch (error) {
+        categoriaId = null;
+      }
+    }
+
     const payload = {
       codigo: form.codigo.value.trim() || (editing ? '' : `PRD-${String(Date.now()).slice(-6)}`),
       nombre: form.nombre.value.trim(),
-      categoria_id: Number(form.categoria.value || 0) || null,
+      categoria_id: categoriaId,
+      categoria: normalizedCategory,
       descripcion: form.descripcion.value.trim(),
       precio: Number(form.precio.value || 0),
       stock: Number(form.stock.value || 0),
@@ -2030,6 +2077,7 @@ function renderLogin() {
         <div class="login-header">
           <span class="eyebrow">Acceso</span>
           <h1>${isSelectMode ? 'Selecciona tu tipo de ingreso' : isCompanyMode ? 'Acceso a la empresa' : isRegisterMode ? 'Crear cuenta de empresa' : 'Acceso al sistema'}</h1>
+          <button type="button" class="btn btn-outline-light btn-sm mt-3" id="goToMainPageBtn">← Volver a la página principal</button>
         </div>
 
         <div class="login-brand-bar">
@@ -2063,7 +2111,7 @@ function renderLogin() {
 
             <div class="login-card admin-card selection-card" data-login-type="staff">
               <div class="login-card-identity admin-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div class="card-mark admin-mark"><i class="fa-solid fa-user-gear"></i></div>
                 <div>
                   <span>Administración</span>
                   <strong>Usuarios y caja</strong>
@@ -2076,7 +2124,7 @@ function renderLogin() {
 
             <div class="login-card register-card selection-card" data-login-type="register">
               <div class="login-card-identity admin-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div class="card-mark register-mark"><i class="fa-solid fa-user-plus"></i></div>
                 <div>
                   <span>Crear cuenta</span>
                   <strong>Empresa + admin</strong>
@@ -2089,7 +2137,7 @@ function renderLogin() {
 
             <div class="login-card guest-card selection-card" data-login-type="guest">
               <div class="login-card-identity admin-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div class="card-mark guest-mark"><i class="fa-solid fa-eye"></i></div>
                 <div>
                   <span>Invitado</span>
                   <strong>Vista limitada</strong>
@@ -2106,7 +2154,7 @@ function renderLogin() {
           <div class="login-panel company-panel">
             <div class="login-card company-card active-card" data-login-type="company">
               <div class="login-card-identity company-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo empresa" class="card-logo" />
+                <div class="card-mark company-mark"><i class="fa-solid fa-building"></i></div>
                 <div>
                   <span>Empresa</span>
                   <strong>${getActiveCompanyLabel()}</strong>
@@ -2130,7 +2178,7 @@ function renderLogin() {
           <div class="login-panel register-panel">
             <div class="login-card admin-card active-card" data-login-type="register">
               <div class="login-card-identity admin-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div class="card-mark register-mark"><i class="fa-solid fa-user-plus"></i></div>
                 <div>
                   <span>Registrar</span>
                   <strong>Empresa + administrador</strong>
@@ -2164,7 +2212,7 @@ function renderLogin() {
           <div class="login-panel staff-panel">
             <div class="login-card admin-card active-card" data-login-type="staff">
               <div class="login-card-identity admin-identity">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="card-logo" />
+                <div class="card-mark admin-mark"><i class="fa-solid fa-user-gear"></i></div>
                 <div>
                   <span>Administración</span>
                   <strong>Usuarios y caja</strong>
@@ -2349,6 +2397,25 @@ function renderLogin() {
   document.getElementById('backToLoginSelect')?.addEventListener('click', () => {
     state.loginMode = 'select';
     renderLogin();
+  });
+
+  document.getElementById('goToMainPageBtn')?.addEventListener('click', () => {
+    const candidates = [
+      '../KAJA-FRONTED/index.html',
+      '/KAJA-FRONTED/index.html',
+      '../index.html',
+      '/index.html',
+      'KAJA-FRONTED/index.html'
+    ];
+    const target = candidates.find((candidate) => {
+      try {
+        const url = new URL(candidate, window.location.href);
+        return url.pathname && url.pathname !== window.location.pathname;
+      } catch (error) {
+        return false;
+      }
+    }) || '../KAJA-FRONTED/index.html';
+    window.location.href = target;
   });
 }
 

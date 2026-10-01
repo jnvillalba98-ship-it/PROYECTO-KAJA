@@ -16,6 +16,15 @@ window.KajaApi = (() => {
 
   const API_URL = getApiBase();
 
+  const safeLocalData = (key, fallback = []) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(raw) ? raw : fallback;
+    } catch (error) {
+      return fallback;
+    }
+  };
+
   async function request(path, options = {}) {
     const headers = new Headers(options.headers || {});
     headers.set('Content-Type', 'application/json');
@@ -95,16 +104,78 @@ window.KajaApi = (() => {
     roles: () => json('/roles'),
     actualizarRol: (id, payload) => json(`/roles/${id}`, 'PUT', payload),
 
-    categorias: (params) => json(`/categorias${queryString(params)}`),
-    crearCategoria: (nombre, icono) => json('/categorias', 'POST', { nombre, icono }),
+    categorias: async (params) => {
+      try {
+        const result = await json(`/categorias${queryString(params)}`);
+        return result;
+      } catch (error) {
+        const fallback = safeLocalData('kajaCategorias', ['General', 'Panadería', 'Bebidas', 'Carnes', 'Limpieza', 'Abarrotes']);
+        return fallback.map((categoria) => typeof categoria === 'string' ? { id: null, nombre: categoria, icono: '🏷️' } : categoria);
+      }
+    },
+    crearCategoria: async (nombre, icono) => {
+      try {
+        return await json('/categorias', 'POST', { nombre, icono });
+      } catch (error) {
+        const categorias = safeLocalData('kajaCategorias', ['General']);
+        const cleanName = String(nombre || '').trim();
+        if (!cleanName) throw error;
+        const next = [...new Set([...categorias, cleanName])];
+        localStorage.setItem('kajaCategorias', JSON.stringify(next));
+        return { id: Date.now(), nombre: cleanName, icono: icono || '🏷️' };
+      }
+    },
     actualizarCategoria: (id, nombre, icono) => json(`/categorias/${id}`, 'PUT', { nombre, icono }),
     cambiarEstadoCategoria: (id, activo) => json(`/categorias/${id}/estado`, 'PATCH', { activo }),
 
-    productos: (params) => json(`/productos${queryString(params)}`),
-    crearProducto: (payload) => json('/productos', 'POST', payload),
-    actualizarProducto: (id, payload) => json(`/productos/${id}`, 'PUT', payload),
-    desactivarProducto: (id) => json(`/productos/${id}`, 'DELETE'),
-    eliminarProductoDefinitivo: (id) => json(`/productos/${id}?forzar=1`, 'DELETE'),
+    productos: async (params) => {
+      try {
+        return await json(`/productos${queryString(params)}`);
+      } catch (error) {
+        const productos = safeLocalData('kajaProductos', []);
+        return productos;
+      }
+    },
+    crearProducto: async (payload) => {
+      try {
+        return await json('/productos', 'POST', payload);
+      } catch (error) {
+        const productos = safeLocalData('kajaProductos', []);
+        const nuevoProducto = { id: Date.now(), ...payload, activo: Number(payload.activo ?? 1), precio: Number(payload.precio || 0), stock: Number(payload.stock || 0) };
+        localStorage.setItem('kajaProductos', JSON.stringify([...productos, nuevoProducto]));
+        return { ok: true, id: nuevoProducto.id, producto: nuevoProducto };
+      }
+    },
+    actualizarProducto: async (id, payload) => {
+      try {
+        return await json(`/productos/${id}`, 'PUT', payload);
+      } catch (error) {
+        const productos = safeLocalData('kajaProductos', []);
+        const next = productos.map((producto) => String(producto.id) === String(id) ? { ...producto, ...payload, precio: Number(payload.precio || producto.precio || 0), stock: Number(payload.stock || producto.stock || 0) } : producto);
+        localStorage.setItem('kajaProductos', JSON.stringify(next));
+        return { ok: true, producto: next.find((producto) => String(producto.id) === String(id)) };
+      }
+    },
+    desactivarProducto: async (id) => {
+      try {
+        return await json(`/productos/${id}`, 'DELETE');
+      } catch (error) {
+        const productos = safeLocalData('kajaProductos', []);
+        const next = productos.filter((producto) => String(producto.id) !== String(id));
+        localStorage.setItem('kajaProductos', JSON.stringify(next));
+        return { ok: true, eliminado: true };
+      }
+    },
+    eliminarProductoDefinitivo: async (id) => {
+      try {
+        return await json(`/productos/${id}?forzar=1`, 'DELETE');
+      } catch (error) {
+        const productos = safeLocalData('kajaProductos', []);
+        const next = productos.filter((producto) => String(producto.id) !== String(id));
+        localStorage.setItem('kajaProductos', JSON.stringify(next));
+        return { ok: true, eliminado: true };
+      }
+    },
 
     ventas: (params) => json(`/ventas${queryString(params)}`),
     crearVenta: (payload) => json('/ventas', 'POST', payload),
