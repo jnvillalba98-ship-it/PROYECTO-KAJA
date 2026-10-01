@@ -112,7 +112,6 @@ function renderApp() {
           <div class="hero-copy reveal">
             <span class="eyebrow">SOFTWARE EMPRESARIAL</span>
             <h1>KAJA</h1>
-            <h2>KAJA</h2>
             <p>
               Centraliza inventario, facturación, usuarios, empresas y reportes en una plataforma clara,
               ordenada y preparada para operar con rapidez.
@@ -126,7 +125,6 @@ function renderApp() {
             <div class="hero-badges">
               <span class="badge"><i class="fa-solid fa-shield-halved"></i> Seguridad</span>
               <span class="badge"><i class="fa-solid fa-boxes-stacked"></i> Inventario</span>
-              <span class="badge"><i class="fa-solid fa-file-invoice-dollar"></i> Facturación</span>
             </div>
           </div>
 
@@ -222,15 +220,7 @@ function renderApp() {
     </main>
 
     <footer>
-      <div class="footer-brand">
-        <div class="footer-mark">
-          <img src="assets/logo-kaja.png" alt="Logo KAJA" class="footer-logo" />
-        </div>
-        <div class="footer-copy">
-          <strong>KAJA</strong>
-        </div>
-      </div>
-      <p>© KAJA-2026</p>
+      <p>© 2026. Todos los derechos reservados.</p>
     </footer>
 
     <button id="kaja-chat-button" aria-label="Abrir Asistente KAJA">
