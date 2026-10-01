@@ -1860,6 +1860,15 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
   box-shadow: 0 14px 26px rgba(245, 158, 11, 0.18);
 }
 
+.kaja-logo-mini {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: rgba(250, 204, 21, 0.08);
+  padding: 4px;
+}
+
 .brand-mark-icon {
   width: 52px;
   height: 52px;

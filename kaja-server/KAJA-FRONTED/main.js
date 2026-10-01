@@ -82,8 +82,7 @@ function renderApp() {
   app.innerHTML = `
     <header class="navbar">
       <div class="logo">
-        <div class="logo-mark" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
-        <span>KAJA</span>
+        <img src="assets/logo-kaja.png" alt="Logo KAJA" />
       </div>
 
       <button class="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
@@ -113,10 +112,10 @@ function renderApp() {
           <div class="hero-copy reveal">
             <span class="eyebrow">SOFTWARE EMPRESARIAL</span>
             <h1>KAJA</h1>
-            <h2>Caja registradora y control de ventas para tu negocio</h2>
+            <h2>KAJA-2026</h2>
             <p>
-              Centraliza inventario, facturación, usuarios, empresas y reportes en una plataforma moderna
-              pensada para negocios que necesitan rapidez, claridad y control en tiempo real.
+              Centraliza inventario, facturación, usuarios, empresas y reportes con una plataforma clara,
+              ordenada y preparada para operar con rapidez.
             </p>
 
             <div class="hero-actions">
@@ -135,7 +134,7 @@ function renderApp() {
             <div class="panel-card kaja-dash-mock">
               <div class="kaja-dash-top">
                 <div class="kaja-dash-brand">
-                  <div class="mini-brand-mark neutral" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
+                  <img src="assets/logo-kaja.png" alt="Logo KAJA" class="mini-brand-logo" />
                   <div>
                     <strong>Panel KAJA</strong>
                     <small>Control central de operación</small>
@@ -225,14 +224,13 @@ function renderApp() {
     <footer>
       <div class="footer-brand">
         <div class="footer-mark">
-          <i class="fas fa-cash-register"></i>
+          <img src="assets/logo-kaja.png" alt="Logo KAJA" class="footer-logo" />
         </div>
         <div class="footer-copy">
-          <strong>KAJA</strong>
-          <span>Modern POS & Finance</span>
+          <strong>KAJA-2026</strong>
         </div>
       </div>
-      <p>© KAJA-2026 — Gestión moderna para negocios</p>
+      <p>© KAJA-2026</p>
     </footer>
 
     <button id="kaja-chat-button" aria-label="Abrir Asistente KAJA">

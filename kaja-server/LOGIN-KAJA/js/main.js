@@ -1227,8 +1227,8 @@ function loadSection(section) {
       </div>
 
       <div class="panel-box" style="margin-top:22px;border:1px dashed rgba(56,189,248,.5);background:linear-gradient(120deg,rgba(56,189,248,.12),rgba(250,204,21,.1));">
-        <div class="panel-header"><h3>📱 KAJA APP — Próximamente</h3><span>Espacio reservado para conectar</span></div>
-        <p style="color:#cbd5e1;font-size:.85rem;margin:0;">Puente backend listo en <b>/api/app/status</b> y <b>/api/app/sync</b>. Aquí se conectará la app móvil sin afectar ventas, inventario ni reportes.</p>
+        <div class="panel-header"><h3>KAJA APP</h3><span>Próximamente</span></div>
+        <p style="color:#cbd5e1;font-size:.85rem;margin:0;">Puente backend listo en <b>/api/app/status</b> y <b>/api/app/sync</b>. El módulo móvil queda reservado para una próxima integración.</p>
       </div>
 
       <div class="insight-panel">
@@ -2200,10 +2200,10 @@ function renderLogin() {
 
         <div class="login-brand-bar">
           <div class="brand-mark">
-            <div class="brand-mark-icon" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
+            <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="kaja-logo-mini" />
             <div>
               <span>KAJA</span>
-              <strong>Caja registradora</strong>
+              <strong>KAJA-2026</strong>
             </div>
           </div>
           <div class="brand-company-tag">

@@ -47,7 +47,51 @@ h1, h2, h3, .eyebrow, .logo, .primary-btn { font-family: "Fredoka", "Manrope", s
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
-.logo img { width: 90px; filter: drop-shadow(0 8px 15px rgba(14, 165, 233, 0.2)); }
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.logo img,
+.mini-brand-logo,
+.footer-logo {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(250, 204, 21, 0.12));
+}
+.logo-mark,
+.mini-brand-mark,
+.footer-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.08);
+  color: var(--secondary);
+}
+.logo-mark {
+  width: 42px;
+  height: 42px;
+  font-size: 1.1rem;
+}
+.mini-brand-mark {
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+}
+.mini-brand-mark.neutral {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.32);
+  color: var(--primary);
+}
 .nav-links { display: flex; align-items: center; gap: 2rem; }
 .nav-links a {
   position: relative;
@@ -470,19 +514,34 @@ footer {
   text-align: center;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
 .footer-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 56px;
   height: 56px;
-  margin-bottom: 0.8rem;
   border: 1px solid rgba(250, 204, 21, 0.4);
   border-radius: 18px;
   background: rgba(250, 204, 21, 0.08);
-  color: var(--secondary);
-  font-size: 1.3rem;
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.08);
+}
+.footer-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  text-align: left;
+}
+.footer-copy strong {
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
 }
 footer p { color: var(--muted); }
 
