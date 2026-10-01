@@ -2109,6 +2109,41 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
   font-size: 0.92rem;
 }
 
+.category-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-preview-icon,
+.category-list-icon,
+.category-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(56, 189, 248, 0.12));
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  color: #f8fafc;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.category-preview-icon {
+  width: 48px;
+  height: 48px;
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.3), rgba(56, 189, 248, 0.16));
+}
+
+.category-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .company-identity {
   background: rgba(16, 185, 129, 0.08);
   border-color: rgba(16, 185, 129, 0.22);

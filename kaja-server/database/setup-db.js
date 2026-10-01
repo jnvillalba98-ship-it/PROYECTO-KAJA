@@ -51,6 +51,7 @@ async function ensureSchema(connection) {
     await ensureColumn(connection, 'usuarios', 'fecha_creacion', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP');
     await ensureColumn(connection, 'usuarios', 'updated_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
     await ensureColumn(connection, 'usuarios', 'legacy_auth_user_id', 'INT NULL');
+    await ensureColumn(connection, 'categorias', 'icono', 'VARCHAR(80) NULL DEFAULT NULL');
     await ensureColumn(connection, 'productos_producto', 'categoria_id', 'INT NULL');
     await ensureColumn(connection, 'productos_producto', 'updated_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 

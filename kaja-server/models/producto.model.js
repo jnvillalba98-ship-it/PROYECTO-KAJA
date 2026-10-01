@@ -1,5 +1,14 @@
 const conexion = require('../config/conexion');
 
+const generarCodigoAutomatico = async (empresa_id) => {
+    const [rows] = await conexion.query(
+        'SELECT COALESCE(MAX(id), 0) + 1 AS siguiente FROM productos_producto WHERE empresa_id = ?',
+        [empresa_id]
+    );
+    const siguiente = Number(rows?.[0]?.siguiente || 1);
+    return `PRD-${String(siguiente).padStart(5, '0')}`;
+};
+
 const Producto = {
     async obtenerTodos(empresa_id, { search = '', categoria_id = '', activo = '', page = '', pageSize = '', sortBy = 'id', sortDir = 'asc' } = {}) {
         const filters = ['p.empresa_id = ?'];
@@ -47,11 +56,12 @@ const Producto = {
     },
 
     async crear(producto, empresa_id) {
+        const codigoGenerado = (producto.codigo || '').trim() || await generarCodigoAutomatico(empresa_id);
         const [resultado] = await conexion.query(
             `INSERT INTO productos_producto
              (empresa_id, categoria_id, codigo, nombre, descripcion, precio, stock, activo, fecha_creacion)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [empresa_id, producto.categoria_id || null, producto.codigo, producto.nombre, producto.descripcion || '', producto.precio, producto.stock, producto.activo ?? 1]
+            [empresa_id, producto.categoria_id || null, codigoGenerado, producto.nombre, producto.descripcion || '', producto.precio, producto.stock, producto.activo ?? 1]
         );
         return resultado;
     },
@@ -67,41 +77,26 @@ const Producto = {
     },
 
     /* ELIMINADO DEFINITIVO DE PRODUCTO POR ID Y EMPRESA.
-       SI forzar = true BORRA TAMBIEN MOVIMIENTOS Y DESVINCULA DETALLES DE VENTA PARA NO ROMPER HISTORIAL. */
-    async eliminar(id, empresa_id, forzar = false) {
-        if (forzar) {
-            const connection = await conexion.getConnection();
-            try {
-                await connection.beginTransaction();
-                /* DESVINCULA EL PRODUCTO DE LOS DETALLES DE VENTA (CONSERVA LA VENTA Y SU HISTORIAL) */
-                await connection.query('UPDATE venta_detalles SET producto_id = NULL WHERE producto_id = ?', [id]).catch(() => {});
-                /* BORRA MOVIMIENTOS DE INVENTARIO DEL PRODUCTO */
-                await connection.query('DELETE FROM movimientos_inventario WHERE producto_id = ? AND empresa_id = ?', [id, empresa_id]).catch(() => {});
-                const [resultado] = await connection.query(
-                    'DELETE FROM productos_producto WHERE id = ? AND empresa_id = ?',
-                    [id, empresa_id]
-                );
-                await connection.commit();
-                return resultado;
-            } catch (error) {
-                await connection.rollback();
-                throw error;
-            } finally { connection.release(); }
-        }
+       Se elimina físicamente del catálogo para cumplir la regla del sistema.
+       El historial de ventas y movimientos se conserva desasociando el producto, sin borrar la venta ni dejarlo activo. */
+    async eliminar(id, empresa_id, forzar = true) {
+        const connection = await conexion.getConnection();
         try {
-            const [resultado] = await conexion.query(
+            await connection.beginTransaction();
+            await connection.query('UPDATE venta_detalles SET producto_id = NULL WHERE producto_id = ? AND empresa_id = ?', [id, empresa_id]).catch(() => {});
+            await connection.query('UPDATE movimientos_inventario SET producto_id = NULL WHERE producto_id = ? AND empresa_id = ?', [id, empresa_id]).catch(() => {});
+            const [resultado] = await connection.query(
                 'DELETE FROM productos_producto WHERE id = ? AND empresa_id = ?',
                 [id, empresa_id]
             );
-            if (resultado.affectedRows > 0) return resultado;
-        } catch (e) {
-            /* SI TIENE VENTAS ASOCIADAS NO SE PUEDE BORRAR: SE DESACTIVA PARA NO ROMPER HISTORIAL */
+            await connection.commit();
+            return resultado;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-        const [soft] = await conexion.query(
-            'UPDATE productos_producto SET activo = 0 WHERE id = ? AND empresa_id = ?',
-            [id, empresa_id]
-        );
-        return soft;
     }
 };
 

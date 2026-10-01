@@ -7,17 +7,19 @@ const listar = async (req, res) => {
 
 const crear = async (req, res) => {
     const nombre = String(req.body?.nombre || '').trim();
+    const icono = String(req.body?.icono || '').trim();
     if (!nombre) return res.status(400).json({ mensaje: 'El nombre de la categoría es obligatorio' });
     if (await Categoria.existe(nombre, req.usuario.empresa_id)) return res.status(409).json({ mensaje: 'La categoría ya existe' });
-    const id = await Categoria.crear(req.usuario.empresa_id, nombre);
+    const id = await Categoria.crear(req.usuario.empresa_id, nombre, icono);
     return res.status(201).json({ mensaje: 'Categoría creada correctamente', data: await Categoria.obtenerPorId(id, req.usuario.empresa_id) });
 };
 
 const actualizar = async (req, res) => {
     const nombre = String(req.body?.nombre || '').trim();
+    const icono = String(req.body?.icono || '').trim();
     if (!nombre) return res.status(400).json({ mensaje: 'El nombre de la categoría es obligatorio' });
     if (await Categoria.existe(nombre, req.usuario.empresa_id, req.params.id)) return res.status(409).json({ mensaje: 'La categoría ya existe' });
-    await Categoria.actualizar(req.params.id, req.usuario.empresa_id, nombre);
+    await Categoria.actualizar(req.params.id, req.usuario.empresa_id, nombre, icono);
     return res.json({ mensaje: 'Categoría actualizada correctamente' });
 };
 

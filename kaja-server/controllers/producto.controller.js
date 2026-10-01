@@ -18,11 +18,12 @@ const obtenerProductoPorId = async (req, res) => {
 const crearProducto = async (req, res) => {
     try {
         const payload = req.body || {};
-        if (!payload.codigo || !payload.nombre || Number(payload.precio) < 0 || Number(payload.stock) < 0) {
-            return res.status(400).json({ mensaje: 'Código, nombre, precio y stock son obligatorios y válidos' });
+        const codigo = String(payload.codigo || '').trim();
+        if (!payload.nombre || Number(payload.precio) < 0 || Number(payload.stock) < 0) {
+            return res.status(400).json({ mensaje: 'Nombre, precio y stock son obligatorios y válidos' });
         }
-        const resultado = await ProductoService.crear(payload, req.usuario.empresa_id);
-        return res.status(201).json({ mensaje: 'Producto registrado correctamente', id: resultado.insertId });
+        const resultado = await ProductoService.crear({ ...payload, codigo }, req.usuario.empresa_id);
+        return res.status(201).json({ mensaje: 'Producto registrado correctamente', id: resultado.insertId, codigo: codigo || resultado.codigo || 'generado' });
     } catch (error) { return res.status(500).json({ mensaje: 'Error al registrar el producto' }); }
 };
 

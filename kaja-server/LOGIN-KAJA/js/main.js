@@ -284,6 +284,46 @@ function startClock() {
   setInterval(update, 30000);
 }
 
+function inferCategoryIcon(nombre = '') {
+  const clean = String(nombre || '').trim().toLowerCase();
+  if (!clean) return '🏷️';
+
+  const iconMap = [
+    { keys: ['cafe', 'cafeteria', 'espresso', 'cafe', 'coffee'], icon: '☕' },
+    { keys: ['ropa', 'vestido', 'camisa', 'pantalon', 'moda', 'accesorio'], icon: '👕' },
+    { keys: ['comida', 'restaurante', 'pollo', 'hamburguesa', 'pizza', 'cocina', 'snack'], icon: '🍽️' },
+    { keys: ['bebida', 'gaseosa', 'jugo', 'licor', 'agua', 'refresco'], icon: '🥤' },
+    { keys: ['fruta', 'verdura', 'hortaliza', 'vegetal', 'ensalada'], icon: '🥗' },
+    { keys: ['limpieza', 'aseo', 'detergente', 'papel', 'lavanderia'], icon: '🧼' },
+    { keys: ['electronica', 'tecnologia', 'computador', 'celular', 'audio', 'tv', 'monitor'], icon: '💻' },
+    { keys: ['hogar', 'cocina', 'muebles', 'decoracion', 'dormitorio'], icon: '🏠' },
+    { keys: ['salud', 'medicamento', 'farmacia', 'vitamina'], icon: '💊' },
+    { keys: ['juguete', 'niño', 'bebe', 'infantil'], icon: '🧸' },
+    { keys: ['deporte', 'fitness', 'gym', 'equipo', 'bicicleta'], icon: '🏋️' },
+    { keys: ['libreria', 'papeleria', 'escritorio', 'oficina'], icon: '📚' },
+    { keys: ['gasolina', 'automotriz', 'auto', 'vehiculo', 'llanta'], icon: '🚗' },
+    { keys: ['perfumeria', 'cosmetico', 'belleza', 'maquillaje'], icon: '💄' },
+    { keys: ['animal', 'mascota', 'perro', 'gato', 'vet'], icon: '🐾' },
+    { keys: ['general', 'varios', 'base', 'principal'], icon: '📦' }
+  ];
+
+  const matched = iconMap.find((entry) => entry.keys.some((key) => clean.includes(key)));
+  if (matched) return matched.icon;
+
+  const seed = Array.from(clean).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const palette = ['🧩', '📦', '🛒', '🏷️', '✨', '🧰', '📌', '🎯', '🧪', '⚙️'];
+  return palette[seed % palette.length];
+}
+
+function renderCategoryBadge(icono, nombre = '') {
+  const value = String(icono || '').trim();
+  if (!value) return `<span class="category-badge-icon" aria-label="${String(nombre || 'Categoría').replace(/"/g, '&quot;')}">${inferCategoryIcon(nombre)}</span>`;
+  if (/^(fa-|fas |far |fal |fab |fa-solid|fa-regular|fa-brands)/.test(value)) {
+    return `<i class="${value}"></i>`;
+  }
+  return `<span class="category-badge-icon" aria-label="${String(nombre || 'Categoría').replace(/"/g, '&quot;')}">${value}</span>`;
+}
+
 function renderDashboard() {
   const guestMode = isGuestSession();
   const menuMarkup = guestMode ? `
@@ -687,7 +727,8 @@ async function openCategoryManagerApi() {
             <button type="button" class="btn-close btn-close-white" data-close-api-category="true" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
-            <div class="input-group mb-3">
+            <div class="category-input-wrap mb-3">
+              <div id="newApiCategoryIconPreview" class="category-preview-icon" aria-live="polite">🏷️</div>
               <input id="newApiCategoryInput" type="text" class="form-control" placeholder="Nueva categoría" maxlength="80">
               <button type="button" class="btn btn-kaja" id="addApiCategoryBtn">Agregar</button>
             </div>
@@ -697,7 +738,12 @@ async function openCategoryManagerApi() {
                 <tbody>
                   ${categorias.map((categoria) => `
                     <tr>
-                      <td>${categoria.nombre}</td>
+                      <td>
+                        <div class="category-name-cell">
+                          <span class="category-list-icon">${renderCategoryBadge(categoria.icono || inferCategoryIcon(categoria.nombre), categoria.nombre)}</span>
+                          <span>${categoria.nombre}</span>
+                        </div>
+                      </td>
                       <td>${categoria.productos_count || 0}</td>
                       <td>
                         <div class="d-flex gap-2">
@@ -725,12 +771,22 @@ async function openCategoryManagerApi() {
   const close = () => modal?.remove();
   modal?.querySelectorAll('[data-close-api-category="true"]').forEach((button) => button.addEventListener('click', close));
 
+  const preview = document.getElementById('newApiCategoryIconPreview');
+  const input = document.getElementById('newApiCategoryInput');
+  const syncPreview = () => {
+    if (!preview || !input) return;
+    const nombre = input.value.trim();
+    preview.innerHTML = renderCategoryBadge(inferCategoryIcon(nombre), nombre || 'Categoría');
+  };
+  input?.addEventListener('input', syncPreview);
+  syncPreview();
+
   document.getElementById('addApiCategoryBtn')?.addEventListener('click', async () => {
-    const input = document.getElementById('newApiCategoryInput');
     const nombre = input?.value.trim();
     if (!nombre) return;
     try {
-      await KajaApi.crearCategoria(nombre);
+      const icono = inferCategoryIcon(nombre);
+      await KajaApi.crearCategoria(nombre, icono);
       close();
       await openCategoryManagerApi();
     } catch (error) { alert(error.message); }
@@ -742,7 +798,10 @@ async function openCategoryManagerApi() {
     try {
       if (target.dataset.apiCategoryAction === 'edit') {
         const nombre = window.prompt('Editar categoría:', target.dataset.categoryName);
-        if (nombre?.trim()) await KajaApi.actualizarCategoria(target.dataset.categoryId, nombre.trim());
+        if (nombre?.trim()) {
+          const icono = inferCategoryIcon(nombre.trim());
+          await KajaApi.actualizarCategoria(target.dataset.categoryId, nombre.trim(), icono);
+        }
       } else if (target.dataset.apiCategoryAction === 'disable') {
         if (!window.confirm('¿Deseas desactivar esta categoría?')) return;
         await KajaApi.cambiarEstadoCategoria(target.dataset.categoryId, false);

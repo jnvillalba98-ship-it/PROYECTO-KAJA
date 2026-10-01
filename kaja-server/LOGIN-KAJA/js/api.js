@@ -96,8 +96,8 @@ window.KajaApi = (() => {
     actualizarRol: (id, payload) => json(`/roles/${id}`, 'PUT', payload),
 
     categorias: (params) => json(`/categorias${queryString(params)}`),
-    crearCategoria: (nombre) => json('/categorias', 'POST', { nombre }),
-    actualizarCategoria: (id, nombre) => json(`/categorias/${id}`, 'PUT', { nombre }),
+    crearCategoria: (nombre, icono) => json('/categorias', 'POST', { nombre, icono }),
+    actualizarCategoria: (id, nombre, icono) => json(`/categorias/${id}`, 'PUT', { nombre, icono }),
     cambiarEstadoCategoria: (id, activo) => json(`/categorias/${id}/estado`, 'PATCH', { activo }),
 
     productos: (params) => json(`/productos${queryString(params)}`),

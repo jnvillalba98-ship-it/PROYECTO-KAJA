@@ -3,7 +3,7 @@ const conexion = require('../config/conexion');
 const Categoria = {
     async listar(empresaId, activo = '') {
         const params = [empresaId];
-        let sql = `SELECT c.id, c.empresa_id, c.nombre, c.activo, c.fecha_creacion,
+        let sql = `SELECT c.id, c.empresa_id, c.nombre, c.icono, c.activo, c.fecha_creacion,
                           COUNT(p.id) AS productos_count
                    FROM categorias c
                    LEFT JOIN productos_producto p ON p.categoria_id = c.id
@@ -28,13 +28,15 @@ const Categoria = {
         return Boolean(rows.length);
     },
 
-    async crear(empresaId, nombre) {
-        const [result] = await conexion.query('INSERT INTO categorias (empresa_id, nombre, activo) VALUES (?, ?, 1)', [empresaId, nombre]);
+    async crear(empresaId, nombre, icono = null) {
+        const iconValue = String(icono || '').trim() || null;
+        const [result] = await conexion.query('INSERT INTO categorias (empresa_id, nombre, icono, activo) VALUES (?, ?, ?, 1)', [empresaId, nombre, iconValue]);
         return result.insertId;
     },
 
-    async actualizar(id, empresaId, nombre) {
-        const [result] = await conexion.query('UPDATE categorias SET nombre = ? WHERE id = ? AND empresa_id = ?', [nombre, id, empresaId]);
+    async actualizar(id, empresaId, nombre, icono = null) {
+        const iconValue = String(icono || '').trim() || null;
+        const [result] = await conexion.query('UPDATE categorias SET nombre = ?, icono = ? WHERE id = ? AND empresa_id = ?', [nombre, iconValue, id, empresaId]);
         return result.affectedRows > 0;
     },
 

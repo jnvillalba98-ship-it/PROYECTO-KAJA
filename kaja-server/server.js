@@ -77,6 +77,17 @@ app.post('/api/app/sync', (req, res) => {
     });
 });
 
+const ensureCategoriaSchema = async () => {
+    try {
+        await conexion.query(`
+            ALTER TABLE categorias
+            ADD COLUMN IF NOT EXISTS icono VARCHAR(80) NULL DEFAULT NULL AFTER nombre
+        `);
+    } catch (error) {
+        console.warn('No se pudo asegurar la estructura de categorías:', error.message || error);
+    }
+};
+
 const ensureRoleSchema = async () => {
     try {
         await conexion.query(`
@@ -102,6 +113,7 @@ const ensureDeveloperUser = async () => {
     const username = process.env.KAJA_DEV_USER || 'developer';
     const password = process.env.KAJA_DEV_PASSWORD || 'KajaDev2026!';
     try {
+        await ensureCategoriaSchema();
         await ensureRoleSchema();
 
         const [roles] = await conexion.query("SELECT id, nombre FROM roles WHERE nombre IN ('DESARROLLADOR', 'DEVELOPER', 'ADMINISTRADOR') ORDER BY FIELD(nombre, 'DESARROLLADOR', 'DEVELOPER', 'ADMINISTRADOR') LIMIT 1");
