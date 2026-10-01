@@ -112,9 +112,9 @@ function renderApp() {
           <div class="hero-copy reveal">
             <span class="eyebrow">SOFTWARE EMPRESARIAL</span>
             <h1>KAJA</h1>
-            <h2>KAJA-2026</h2>
+            <h2>KAJA</h2>
             <p>
-              Centraliza inventario, facturación, usuarios, empresas y reportes con una plataforma clara,
+              Centraliza inventario, facturación, usuarios, empresas y reportes en una plataforma clara,
               ordenada y preparada para operar con rapidez.
             </p>
 
@@ -227,7 +227,7 @@ function renderApp() {
           <img src="assets/logo-kaja.png" alt="Logo KAJA" class="footer-logo" />
         </div>
         <div class="footer-copy">
-          <strong>KAJA-2026</strong>
+          <strong>KAJA</strong>
         </div>
       </div>
       <p>© KAJA-2026</p>
