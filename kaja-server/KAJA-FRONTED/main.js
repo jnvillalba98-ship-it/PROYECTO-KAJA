@@ -82,7 +82,8 @@ function renderApp() {
   app.innerHTML = `
     <header class="navbar">
       <div class="logo">
-        <img src="assets/logo-kaja.png" alt="Logo KAJA" />
+        <div class="logo-mark" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
+        <span>KAJA</span>
       </div>
 
       <button class="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
@@ -112,21 +113,21 @@ function renderApp() {
           <div class="hero-copy reveal">
             <span class="eyebrow">SOFTWARE EMPRESARIAL</span>
             <h1>KAJA</h1>
-            <h2>Sistema inteligente de gestión empresarial + módulo móvil</h2>
+            <h2>Caja registradora y control de ventas para tu negocio</h2>
             <p>
-              KAJA ofrece gestión empresarial con control del inventario, usuarios, roles y procesos
-              esenciales, además de un módulo móvil para monitorear operaciones clave desde dispositivos
-              móviles y facilitar la operación diaria de pequeños y medianos negocios.
+              Centraliza inventario, facturación, usuarios, empresas y reportes en una plataforma moderna
+              pensada para negocios que necesitan rapidez, claridad y control en tiempo real.
             </p>
 
             <div class="hero-actions">
               <button class="primary-btn admin-btn" type="button">Ingresar a mi empresa</button>
+              <button class="secondary-btn" type="button" onclick="document.getElementById('modulos').scrollIntoView({behavior:'smooth'})">Ver módulos</button>
             </div>
 
             <div class="hero-badges">
-              <span class="badge">Autenticación segura</span>
-              <span class="badge">Inventario moderno</span>
-              <span class="badge">Gestión centralizada</span>
+              <span class="badge"><i class="fa-solid fa-shield-halved"></i> Seguridad</span>
+              <span class="badge"><i class="fa-solid fa-boxes-stacked"></i> Inventario</span>
+              <span class="badge"><i class="fa-solid fa-file-invoice-dollar"></i> Facturación</span>
             </div>
           </div>
 
@@ -134,7 +135,7 @@ function renderApp() {
             <div class="panel-card kaja-dash-mock">
               <div class="kaja-dash-top">
                 <div class="kaja-dash-brand">
-                  <img src="assets/logo-kaja.png" alt="Logo KAJA" />
+                  <div class="mini-brand-mark neutral" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
                   <div>
                     <strong>Panel KAJA</strong>
                     <small>Control central de operación</small>
@@ -156,10 +157,10 @@ function renderApp() {
 
                 <div class="kaja-dash-main">
                   <div class="kaja-dash-kpis">
-                    <div class="kaja-kpi"><span class="kaja-kpi-ico blue">⟡</span><div><small>Ventas del día</small><strong>$1.248.000</strong></div></div>
-                    <div class="kaja-kpi"><span class="kaja-kpi-ico gold">◌</span><div><small>Facturas</small><strong>32</strong></div></div>
-                    <div class="kaja-kpi"><span class="kaja-kpi-ico gold">✦</span><div><small>Ticket prom.</small><strong>$39.000</strong></div></div>
-                    <div class="kaja-kpi"><span class="kaja-kpi-ico red">◫</span><div><small>Valor inventario</small><strong>$8.4M</strong></div></div>
+                    <div class="kaja-kpi"><span class="kaja-kpi-ico blue"><i class="fa-solid fa-sack-dollar"></i></span><div><small>Ventas del día</small><strong>$1.248.000</strong></div></div>
+                    <div class="kaja-kpi"><span class="kaja-kpi-ico gold"><i class="fa-solid fa-file-invoice"></i></span><div><small>Facturas</small><strong>32</strong></div></div>
+                    <div class="kaja-kpi"><span class="kaja-kpi-ico gold"><i class="fa-solid fa-receipt"></i></span><div><small>Ticket prom.</small><strong>$39.000</strong></div></div>
+                    <div class="kaja-kpi"><span class="kaja-kpi-ico red"><i class="fa-solid fa-boxes-stacked"></i></span><div><small>Valor inventario</small><strong>$8.4M</strong></div></div>
                   </div>
 
                   <div class="kaja-dash-chart" aria-label="Ventas por día">
@@ -222,10 +223,16 @@ function renderApp() {
     </main>
 
     <footer>
-      <div class="footer-mark">
-        <i class="fas fa-box"></i>
+      <div class="footer-brand">
+        <div class="footer-mark">
+          <i class="fas fa-cash-register"></i>
+        </div>
+        <div class="footer-copy">
+          <strong>KAJA</strong>
+          <span>Modern POS & Finance</span>
+        </div>
       </div>
-      <p>© 2026 KAJA — Modern POS & Finance</p>
+      <p>© KAJA-2026 — Gestión moderna para negocios</p>
     </footer>
 
     <button id="kaja-chat-button" aria-label="Abrir Asistente KAJA">

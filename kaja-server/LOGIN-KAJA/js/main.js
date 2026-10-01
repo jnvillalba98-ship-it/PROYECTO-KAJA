@@ -46,10 +46,25 @@ function getActiveCompanyLabel() {
   }
 }
 const DEFAULT_CATEGORIES = ['Panadería', 'Bebidas', 'Carnes', 'Limpieza', 'Abarrotes', 'General'];
-const GUEST_PRODUCTS = [
-  { id: 1, codigo: 'INV-001', nombre: 'Muestra inventario', categoria: 'General', stock: 12, precio: 25000, activo: 1, descripcion: 'Vista de ejemplo para invitado.' },
-  { id: 2, codigo: 'INV-002', nombre: 'Muestra de caja', categoria: 'Bebidas', stock: 8, precio: 15000, activo: 1, descripcion: 'Consulta limitada sin edición.' }
-];
+const GUEST_PRODUCTS = [];
+
+function limpiarInventarioDemo() {
+  const demoKeys = ['kajaProductosGuest', 'kajaProductos'];
+  demoKeys.forEach((key) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!Array.isArray(raw)) return;
+      const tieneDemo = raw.some((item) => item && (
+        String(item.codigo || '').startsWith('INV-') ||
+        String(item.nombre || '').includes('Muestra') ||
+        String(item.descripcion || '').includes('ejemplo')
+      ));
+      if (tieneDemo) localStorage.setItem(key, JSON.stringify([]));
+    } catch (error) {
+      console.warn('No se pudo limpiar demo inventario:', error);
+    }
+  });
+}
 
 function isGuestSession() {
   const role = String(state.role || localStorage.getItem('kajaSessionRole') || '').toUpperCase();
@@ -377,7 +392,7 @@ function renderDashboard() {
     <section class="dashboard">
       <aside class="sidebar">
         <div class="sidebar-brand">
-          <div class="brand-mark-solid" aria-label="KAJA"><i class="fa-solid fa-cubes-stacked"></i></div>
+          <div class="brand-mark-solid" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
         </div>
 
         <div class="empresa-indicator">
@@ -643,11 +658,16 @@ function detenerAutoStatKaja() {
 
 /* OBTIENE PRODUCTOS NORMALIZADOS COMO ARREGLO DESDE LA API */
 async function fetchProductosApi() {
+  limpiarInventarioDemo();
+
   if (isGuestSession()) {
     const stored = JSON.parse(localStorage.getItem('kajaProductosGuest') || 'null');
-    if (Array.isArray(stored) && stored.length) return stored;
-    localStorage.setItem('kajaProductosGuest', JSON.stringify(GUEST_PRODUCTS));
-    return GUEST_PRODUCTS;
+    if (Array.isArray(stored) && stored.length) {
+      localStorage.setItem('kajaProductosGuest', JSON.stringify([]));
+      return [];
+    }
+    localStorage.setItem('kajaProductosGuest', JSON.stringify([]));
+    return [];
   }
 
   if (!localStorage.getItem('token')) throw new Error('No hay sesión activa');
@@ -1521,7 +1541,7 @@ function loadSection(section) {
         <div class="ticket-box">
           <div class="invoice-head">
             <div class="invoice-brand">
-              <div class="ticket-mark" aria-label="KAJA"><i class="fa-solid fa-cubes-stacked"></i></div>
+              <div class="ticket-mark" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
               <div>
                 <h4>${emp.nombre}</h4>
                 <small>NIT: ${emp.nit} · ${emp.regimen}</small>
@@ -1583,7 +1603,7 @@ function loadSection(section) {
     content.innerHTML = `
       <div class="subheader">
         <div><h1>Punto de venta</h1><p>Venta rápida con facturación y reportes por caja</p></div>
-        <div class="d-flex gap-2"><button id="newSaleBtn" class="btn btn-kaja btn-sm">+ Nueva venta</button><button id="exportSalesBtn" class="btn btn-outline-light btn-sm">Exportar Excel</button></div>
+        <div class="d-flex gap-2"><button id="newSaleBtn" class="btn btn-kaja btn-sm">+ Nueva venta</button><button id="exportSalesBtn" class="btn btn-outline-light btn-sm">Exportar Excel</button><button id="exportInvoicePdfBtn" class="btn btn-outline-light btn-sm">Exportar PDF</button></div>
       </div>
       <div class="sale-layout">
         <div class="sale-panel panel-box">
@@ -1660,6 +1680,55 @@ function loadSection(section) {
       const desde = (document.getElementById('facDesde') && document.getElementById('facDesde').value) || new Date().toISOString().slice(0, 10);
       const hasta = (document.getElementById('facHasta') && document.getElementById('facHasta').value) || desde;
       KajaApi.exportarVentas({ desde, hasta }).catch((error) => alert(error.message));
+    });
+
+    document.getElementById('exportInvoicePdfBtn')?.addEventListener('click', () => {
+      const preview = document.getElementById('invoicePreview');
+      if (!preview || !preview.innerHTML.trim()) {
+        alert('Primero genera una factura para exportarla en PDF.');
+        return;
+      }
+
+      const popup = window.open('', '_blank', 'width=900,height=1200');
+      if (!popup) {
+        alert('El navegador bloqueó la ventana para impresión PDF. Permite las ventanas emergentes.');
+        return;
+      }
+
+      const printHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Factura KAJA</title>
+            <style>
+              body { font-family: Arial, sans-serif; background: #fff; color: #0f172a; padding: 24px; }
+              .ticket-box { max-width: 720px; margin: 0 auto; border: 1px solid #dfe7ee; border-radius: 18px; padding: 24px; }
+              .invoice-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
+              .invoice-brand { display:flex; gap:12px; align-items:flex-start; }
+              .ticket-mark { display:flex; width:44px; height:44px; border-radius:12px; background:#fef3c7; color:#b45309; align-items:center; justify-content:center; font-size:20px; }
+              .invoice-number-wrap strong { display:block; font-size: 1.4rem; }
+              .invoice-tag { display:inline-block; font-size: 12px; letter-spacing: 0.08em; color:#b45309; text-transform: uppercase; }
+              .ticket-meta { display:flex; justify-content:space-between; gap:12px; font-size:12px; color:#475569; margin-top:8px; }
+              table { width:100%; border-collapse:collapse; margin:18px 0; }
+              th, td { border-bottom:1px solid #e2e8f0; padding:8px 6px; font-size:12px; text-align:left; }
+              .ticket-summary div { display:flex; justify-content:space-between; padding:6px 0; color:#475569; }
+              .ticket-summary .total { font-size:16px; font-weight:700; color:#111827; }
+              .ticket-legal { margin-top:18px; display:flex; flex-direction:column; gap:6px; font-size:11px; color:#475569; }
+              @media print { body { margin: 0; } }
+            </style>
+          </head>
+          <body>
+            ${preview.innerHTML}
+          </body>
+        </html>
+      `;
+
+      popup.document.open();
+      popup.document.write(printHtml);
+      popup.document.close();
+      popup.focus();
+      setTimeout(() => popup.print(), 350);
     });
 
     document.getElementById('addSaleProduct').addEventListener('click', () => {
@@ -1782,7 +1851,10 @@ function loadSection(section) {
             ${categorias.map((categoria) => `<button class="category-filter" type="button" data-category="${categoria}">${categoria}</button>`).join('')}
             <button class="category-filter" type="button">Bajo stock</button>
           </div>
-          <span id="inventoryCountBadge" class="badge text-bg-primary">0 productos</span>
+          <div class="d-flex align-items-center gap-2">
+            <span id="inventoryCountBadge" class="badge text-bg-primary">0 productos</span>
+            <span id="inventoryPageInfo" class="badge text-bg-secondary">Página 1 de 1</span>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-dark table-striped table-hover table-bordered table-sm align-middle kaja-table" style="border:1px solid rgba(250,204,21,.35);">
@@ -1803,6 +1875,10 @@ function loadSection(section) {
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button id="inventoryPrevPage" type="button" class="btn btn-outline-light btn-sm">Anterior</button>
+          <button id="inventoryNextPage" type="button" class="btn btn-outline-light btn-sm">Siguiente</button>
+        </div>
       </div>
     `;
 
@@ -1811,35 +1887,64 @@ function loadSection(section) {
         const productos = await fetchProductosApi();
         localStorage.setItem('kajaProductos', JSON.stringify(productos));
 
-        const rows = (Array.isArray(productos) && productos.length ? productos : []).map((producto) => `
-          <tr>
-            <td>${producto.id ?? '-'}</td>
-            <td>${producto.codigo || 'Sin código'}</td>
-            <td>
-              <div class="inventory-item-name">
-                <strong>${producto.nombre ?? 'Sin nombre'}</strong>
-                <small>${producto.descripcion || 'Sin descripción'}</small>
-              </div>
-            </td>
-            <td>${producto.categoria || 'General'}</td>
-            <td>${producto.stock ?? 0}</td>
-            <td>$${Number(producto.precio || 0).toLocaleString('es-CO')}</td>
-            <td><span class="status-badge ${Number(producto.activo ?? 1) === 1 ? 'active' : 'inactive'}">${Number(producto.activo ?? 1) === 1 ? 'Activo' : 'Inactivo'}</span></td>
-            <td>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-editar-producto" data-producto='${JSON.stringify(producto).replace(/'/g, '&#39;')}'>Editar</button>
-                <button type="button" class="btn btn-eliminar-producto" data-id="${producto.id}">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
+        const pageSize = 8;
+        let currentPage = 1;
+        const total = Array.isArray(productos) ? productos.length : 0;
+        const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
-        document.getElementById('inventoryDynamicBody').innerHTML = rows || '<tr><td colspan="8" class="text-center text-muted">No hay productos registrados.</td></tr>';
-        document.getElementById('inventoryCountBadge').textContent = `${productos.length || 0} productos`;
-        bindInventoryActions();
+        const renderPage = () => {
+          const items = Array.isArray(productos) ? productos : [];
+          const start = (currentPage - 1) * pageSize;
+          const slice = items.slice(start, start + pageSize);
+          const rows = slice.map((producto) => `
+            <tr>
+              <td>${producto.id ?? '-'}</td>
+              <td>${producto.codigo || 'Sin código'}</td>
+              <td>
+                <div class="inventory-item-name">
+                  <strong>${producto.nombre ?? 'Sin nombre'}</strong>
+                  <small>${producto.descripcion || 'Sin descripción'}</small>
+                </div>
+              </td>
+              <td>${producto.categoria || 'General'}</td>
+              <td>${producto.stock ?? 0}</td>
+              <td>$${Number(producto.precio || 0).toLocaleString('es-CO')}</td>
+              <td><span class="status-badge ${Number(producto.activo ?? 1) === 1 ? 'active' : 'inactive'}">${Number(producto.activo ?? 1) === 1 ? 'Activo' : 'Inactivo'}</span></td>
+              <td>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-editar-producto" data-producto='${JSON.stringify(producto).replace(/'/g, '&#39;')}'>Editar</button>
+                  <button type="button" class="btn btn-eliminar-producto" data-id="${producto.id}">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+
+          document.getElementById('inventoryDynamicBody').innerHTML = rows || '<tr><td colspan="8" class="text-center text-muted">No hay productos registrados.</td></tr>';
+          document.getElementById('inventoryCountBadge').textContent = `${total} productos · ${pageCount} páginas`;
+          document.getElementById('inventoryPageInfo').textContent = `Página ${currentPage} de ${pageCount}`;
+          document.getElementById('inventoryPrevPage').disabled = currentPage <= 1;
+          document.getElementById('inventoryNextPage').disabled = currentPage >= pageCount;
+          bindInventoryActions();
+        };
+
+        document.getElementById('inventoryPrevPage')?.addEventListener('click', () => {
+          if (currentPage > 1) {
+            currentPage -= 1;
+            renderPage();
+          }
+        });
+        document.getElementById('inventoryNextPage')?.addEventListener('click', () => {
+          if (currentPage < pageCount) {
+            currentPage += 1;
+            renderPage();
+          }
+        });
+
+        renderPage();
       } catch (error) {
         document.getElementById('inventoryDynamicBody').innerHTML = `<tr><td colspan="8" class="text-center text-danger">${error.message || 'No se pudo cargar el inventario'}</td></tr>`;
         document.getElementById('inventoryCountBadge').textContent = 'Error';
+        document.getElementById('inventoryPageInfo').textContent = 'Página 1 de 1';
       }
     })();
 
@@ -2095,10 +2200,10 @@ function renderLogin() {
 
         <div class="login-brand-bar">
           <div class="brand-mark">
-            <div class="brand-mark-icon" aria-label="KAJA"><i class="fa-solid fa-cubes-stacked"></i></div>
+            <div class="brand-mark-icon" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
             <div>
               <span>KAJA</span>
-              <strong>Gestión inteligente</strong>
+              <strong>Caja registradora</strong>
             </div>
           </div>
           <div class="brand-company-tag">
