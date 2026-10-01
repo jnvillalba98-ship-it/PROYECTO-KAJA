@@ -1,190 +1,150 @@
 const chatMessages = document.getElementById("chatMessages");
 const userInput = document.getElementById("userInput");
 
-/* 🔹 Función para consultar IA */
-async function getAIResponse(message) {
-    const apiKey = "TU_API_KEY"; // reemplaza con tu clave real
-    const endpoint = "https://api.openai.com/v1/chat/completions";
+const BOT_KB = [
+  {
+    pattern: /(hola|buenas|saludos|buen dia|buenas tardes|buenas noches)/i,
+    response: "¡Hola! 👋 Soy el asistente virtual de <strong>KAJA</strong>. Puedo ayudarte con inventario, productos, ventas, roles, facturación y más."
+  },
+  {
+    pattern: /(que es kaja|kaja|sistema kaja)/i,
+    response: "<strong>KAJA</strong> es un sistema de gestión empresarial pensado para controlar inventario, ventas, usuarios, roles, movimientos y operaciones clave del negocio de forma más ordenada."
+  },
+  {
+    pattern: /(inventario|stock|existencias|producto)/i,
+    response: "El módulo de <strong>Inventario</strong> ayuda a revisar existencias, Categorías, alertas y disponibilidad de productos para tomar decisiones rápidas y evitar faltantes."
+  },
+  {
+    pattern: /(ventas|caja|factura|ticket)/i,
+    response: "En KAJA las ventas y la caja están orientadas a registrar movimientos de forma segura, revisar el día de operación y mantener el flujo comercial más claro para el negocio."
+  },
+  {
+    pattern: /(administrador|admin|roles|usuarios)/i,
+    response: "El <strong>administrador</strong> tiene un rol con mayor control del sistema y puede supervisar usuarios, permisos, empresas y configuración del negocio según los accesos habilitados."
+  },
+  {
+    pattern: /(cajero|operacion|movimiento)/i,
+    response: "El rol de <strong>cajero</strong> está centrado en la operación diaria: ventas, cobros y seguimiento del flujo de caja sin entrar en configuraciones generales del sistema."
+  },
+  {
+    pattern: /(frontend|interfaz|pantalla|ui)/i,
+    response: "El <strong>Frontend</strong> corresponde a la parte visual y operativa de KAJA: pantallas, botones, formularios, reportes y experiencia del usuario dentro del sistema."
+  },
+  {
+    pattern: /(backend|servidor|api|node|express)/i,
+    response: "El <strong>Backend</strong> procesa la lógica del negocio y conecta la interfaz con la base de datos. En KAJA, normalmente se trabaja con <strong>Node.js + Express</strong> y MySQL."
+  },
+  {
+    pattern: /(mysql|base de datos|datos)/i,
+    response: "KAJA usa <strong>MySQL</strong> para almacenar información de empresas, usuarios, productos, ventas y reportes clave del sistema."
+  },
+  {
+    pattern: /(tecnologia|tecnologias|stack|tecnologias)/i,
+    response: "La base de KAJA es moderna y práctica: <strong>HTML, CSS, JavaScript</strong> en front-end, <strong>Node.js + Express</strong> en back-end y <strong>MySQL</strong> como almacén de datos."
+  },
+  {
+    pattern: /(objetivo|para que sirve|ayuda)/i,
+    response: "El objetivo de KAJA es facilitar la administración diaria de un negocio: controlar inventario, operar ventas, mantener información organizada y dar claridad a decisiones de negocio."
+  },
+  {
+    pattern: /(gracias|adios|adiós|chao)/i,
+    response: "¡Con gusto! 😊 Estoy aquí para ayudarte cuando quieras revisar el sistema, el inventario o la operación de KAJA."
+  }
+];
 
-    const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: message }]
-        })
-    });
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-}
-
-/* MENSAJE DEL USUARIO */
-function addUserMessage(message) {
-    const div = document.createElement("div");
-    div.className = "message user";
-    div.innerHTML = `
-        <div class="message-content">
-            ${escapeHTML(message)}
-        </div>
-    `;
-    chatMessages.appendChild(div);
-    scrollToBottom();
-}
-
-/* MENSAJE DEL BOT */
-function addBotMessage(message) {
-    const div = document.createElement("div");
-    div.className = "message bot";
-    div.innerHTML = `
-        <div class="message-content">
-            ${message}
-        </div>
-    `;
-    chatMessages.appendChild(div);
-    scrollToBottom();
-}
-
-/* RESPUESTAS */
-async function getBotResponse(message) {
-    const text = normalizeText(message);
-
-    /* SALUDO */
-    if (text.includes("hola") || text.includes("buenas") || text.includes("saludos")) {
-        return `¡Hola! 👋<br><br>Soy el <strong>Asistente KAJA</strong>. Estoy aquí para ayudarte a conocer el sistema.`;
-    }
-
-    /* ¿QUÉ ES KAJA? */
-    if (text.includes("que es kaja") || text.includes("kaja")) {
-        return `<strong>KAJA</strong> es un Sistema de Punto de Venta con Inventario diseñado para apoyar la gestión de productos, existencias y ventas en pequeños y medianos establecimientos.`;
-    }
-
-    /* INVENTARIO */
-    if (text.includes("inventario") || text.includes("stock") || text.includes("existencias")) {
-        return `El módulo de <strong>Inventario</strong> permite consultar y administrar los productos registrados y sus existencias.<br><br>De esta manera se facilita el control de los productos disponibles en el establecimiento.`;
-    }
-
-    /* PRODUCTOS */
-    if (text.includes("producto") || text.includes("productos")) {
-        return `En KAJA se pueden gestionar los productos registrados.<br><br>Dependiendo de los permisos del usuario, se pueden consultar, registrar, actualizar y eliminar productos.`;
-    }
-
-    /* ADMINISTRADOR */
-    if (text.includes("administrador") || text.includes("admin")) {
-        return `El <strong>administrador</strong> tiene mayores permisos dentro del sistema.<br><br>Puede gestionar información del sistema y realizar operaciones administrativas sobre productos e inventario, según las funciones habilitadas.`;
-    }
-
-    /* CAJERO */
-    if (text.includes("cajero") || text.includes("caja") || text.includes("ventas")) {
-        return `El usuario <strong>cajero</strong> está orientado principalmente a las operaciones de venta y manejo de caja.<br><br>Esto permite separar las funciones operativas de las funciones administrativas.`;
-    }
-
-    /* TECNOLOGÍAS */
-    if (text.includes("tecnologia") || text.includes("tecnologias") || text.includes("tecnologías")) {
-        return `KAJA utiliza tecnologías web para construir su sistema.<br><br><strong>Frontend:</strong> HTML, CSS y JavaScript.<br><strong>Backend:</strong> Node.js y Express.<br><strong>Base de datos:</strong> MySQL.<br><br>El proyecto también incorpora tecnologías emergentes como un asistente conversacional.`;
-    }
-
-    /* FRONTEND */
-    if (text.includes("frontend") || text.includes("interfaz")) {
-        return `El <strong>Frontend</strong> corresponde a la parte visual de KAJA con la que interactúa el usuario.<br><br>Allí se presentan los módulos, formularios, tablas, botones y demás elementos de la interfaz.`;
-    }
-
-    /* BACKEND */
-    if (text.includes("backend") || text.includes("servidor")) {
-        return `El <strong>Backend</strong> se encarga de procesar las solicitudes del sistema y comunicarse con la base de datos.<br><br>En KAJA se desarrolla utilizando <strong>Node.js + Express</strong>.`;
-    }
-
-    /* BASE DE DATOS */
-    if (text.includes("base de datos") || text.includes("mysql")) {
-        return `KAJA utiliza <strong>MySQL</strong> como sistema de gestión de base de datos.<br><br>Allí se almacena la información necesaria para el funcionamiento del sistema.`;
-    }
-
-    /* OBJETIVO */
-    if (text.includes("objetivo") || text.includes("para que sirve") || text.includes("para que sirve kaja")) {
-        return `El objetivo de KAJA es facilitar la administración de productos, inventario, ventas y operaciones de caja mediante una solución informática accesible para pequeños y medianos negocios.`;
-    }
-
-    /* AYUDA */
-    if (text.includes("ayuda") || text.includes("opciones") || text.includes("puedes hacer")) {
-        return `Puedo ayudarte con temas relacionados con:<br><br>• KAJA<br>• Inventario<br>• Productos<br>• Ventas<br>• Administrador<br>• Cajero<br>• Frontend<br>• Backend<br>• MySQL<br>• Tecnologías utilizadas`;
-    }
-
-    /* DESPEDIDA */
-    if (text.includes("adios") || text.includes("adiós") || text.includes("gracias") || text.includes("chao")) {
-        return `¡Con gusto! 😊<br><br>Gracias por utilizar el <strong>Asistente KAJA</strong>.`;
-    }
-
-    /* RESPUESTA POR DEFECTO → IA */
-    try {
-        const aiResponse = await getAIResponse(message);
-        return aiResponse;
-    } catch (error) {
-        return `No tengo una respuesta específica para esa pregunta todavía.<br><br>Pregunta por <strong>KAJA, inventario, productos, ventas, administrador, cajero, frontend, backend, MySQL o tecnologías</strong>.`;
-    }
-}
-
-/* NORMALIZAR TEXTO */
 function normalizeText(text) {
-    return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-/* SEGURIDAD */
 function escapeHTML(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
+  const div = document.createElement("div");
+  div.textContent = String(text || "");
+  return div.innerHTML;
 }
 
-/* SCROLL */
 function scrollToBottom() {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+  if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-/* ENTER */
-userInput.addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        sendMessage();
+function addUserMessage(message) {
+  const div = document.createElement("div");
+  div.className = "message user";
+  div.innerHTML = `<div class="message-content">${escapeHTML(message)}</div>`;
+  chatMessages.appendChild(div);
+  scrollToBottom();
+}
+
+function addBotMessage(message) {
+  const div = document.createElement("div");
+  div.className = "message bot";
+  div.innerHTML = `<div class="message-content">${message}</div>`;
+  chatMessages.appendChild(div);
+  scrollToBottom();
+}
+
+function addTypingIndicator() {
+  const div = document.createElement("div");
+  div.className = "message bot typing";
+  div.innerHTML = `<div class="message-content"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+  chatMessages.appendChild(div);
+  scrollToBottom();
+  return div;
+}
+
+function getBotResponse(message) {
+  const text = normalizeText(message);
+
+  for (const item of BOT_KB) {
+    if (item.pattern.test(text)) {
+      return item.response;
     }
-});
+  }
 
-/* 🔹 Ajuste de funciones para async */
+  return "No tengo una respuesta específica para esa pregunta todavía, pero puedo ayudarte con <strong>KAJA</strong>, inventario, ventas, productos, usuarios, reportes, frontend o backend."
+}
+
 async function sendMessage() {
-    const message = userInput.value.trim();
-    if (message === "") return;
+  const message = userInput.value.trim();
+  if (!message) return;
 
-    addUserMessage(message);
-    userInput.value = "";
+  addUserMessage(message);
+  userInput.value = "";
 
-    const response = await getBotResponse(message);
-    addBotMessage(response);
+  const typing = addTypingIndicator();
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  typing.remove();
+  addBotMessage(getBotResponse(message));
 }
 
 async function quickQuestion(question) {
-    addUserMessage(question);
-    const response = await getBotResponse(question);
-    addBotMessage(response);
+  addUserMessage(question);
+  const typing = addTypingIndicator();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  typing.remove();
+  addBotMessage(getBotResponse(question));
 }
-/* =========================
-   CONTROL DE LA BURBUJA
-========================= */
+
+userInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    sendMessage();
+  }
+});
 
 const chatbotButton = document.getElementById("chatbot-button");
 const chatbotContainer = document.getElementById("chatbot-container");
 const chatClose = document.getElementById("chat-close");
 
-
-/* ABRIR CHAT */
-
 chatbotButton.addEventListener("click", () => {
-    chatbotContainer.classList.add("active");
+  chatbotContainer.classList.add("active");
+  userInput.focus();
 });
-
-
-/* CERRAR CHAT */
 
 chatClose.addEventListener("click", () => {
-    chatbotContainer.classList.remove("active");
+  chatbotContainer.classList.remove("active");
 });
+
+const initialGreeting = "¡Hola! Soy el asistente virtual de <strong>KAJA</strong>. ¿En qué puedo ayudarte hoy?";
+addBotMessage(initialGreeting);

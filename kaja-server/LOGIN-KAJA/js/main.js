@@ -1917,13 +1917,12 @@ function loadSection(section) {
             <small style="opacity:.7">Este usuario podrá editar todo el sistema.</small>
           </div>
         </section>
-        <section class="admin-card-panel"><div class="admin-card-head"><span>🔗 Conexión KAJA APP (próximamente)</span><span id="appStatusBadge" class="admin-badge active">Verificando…</span></div>
+        <section class="admin-card-panel"><div class="admin-card-head"><span>🔗 Conexión KAJA APP</span><span id="appStatusBadge" class="admin-badge active">Verificando…</span></div>
           <div class="developer-config-grid">
             <div class="form-group"><label>URL puente</label><input id="appBridgeUrl" class="form-control" value="${getApiBase()}/app/status" readonly /></div>
             <div class="form-group"><label>Estado</label><input id="appBridgeState" class="form-control" value="PROXIMAMENTE" readonly /></div>
             <div class="form-group full-width"><button id="appTestBtn" class="btn btn-kaja btn-sm">Probar conexión</button></div>
           </div>
-          <small style="opacity:.7">Backend listo en <b>/api/app/status</b> y <b>/api/app/sync</b> para conectar la app móvil sin romper lo actual.</small>
         </section>
       </div>
       <div class="developer-privileged-grid" style="margin-top:16px;">
@@ -2232,8 +2231,10 @@ function renderLogin() {
         const authData = await KajaApi.login(user, password);
         const loggedUser = authData.usuario || {};
         const userRole = String(loggedUser.rol || '').toUpperCase();
-        const isAllowedDeveloper = userRole === 'DESARROLLADOR' && user.toLowerCase() === 'developer';
-        const isAllowedRole = !loggedUser.rol || role === userRole || isAllowedDeveloper;
+        const userName = String(user || '').trim().toLowerCase();
+        const isDeveloperUser = userName === 'developer' || userName === 'desarrollador';
+        const isAllowedDeveloper = (userRole === 'DESARROLLADOR' || userRole === 'DEVELOPER') && isDeveloperUser;
+        const isAllowedRole = !loggedUser.rol || role === userRole || role === 'DESARROLLADOR' && userRole === 'DEVELOPER' || isAllowedDeveloper;
 
         if (!isAllowedRole) {
           throw new Error('El rol seleccionado no coincide con el usuario real del sistema.');
