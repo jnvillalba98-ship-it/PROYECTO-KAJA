@@ -95,7 +95,7 @@ function getCategoriasDisponibles() {
   return getStorageCollection(STORAGE_KEYS.categorias, DEFAULT_CATEGORIES);
 }
 
-function normalizeCategoriaList(raw) {
+function normalizeCategoriaRecords(raw) {
   const list = Array.isArray(raw)
     ? raw
     : Array.isArray(raw && raw.data)
@@ -105,9 +105,22 @@ function normalizeCategoriaList(raw) {
         : [];
 
   return list
-    .map((categoria) => (typeof categoria === 'string' ? categoria : (categoria && (categoria.nombre || categoria.categoria || categoria.label))) || '')
-    .filter(Boolean)
-    .map((categoria) => String(categoria).trim());
+    .map((categoria) => {
+      if (typeof categoria === 'string') {
+        const nombre = String(categoria).trim();
+        return nombre ? { id: null, nombre, icono: inferCategoryIcon(nombre) } : null;
+      }
+      if (categoria && typeof categoria === 'object') {
+        const nombre = String(categoria.nombre || categoria.categoria || categoria.label || '').trim();
+        return nombre ? { id: categoria.id || null, nombre, icono: categoria.icono || inferCategoryIcon(nombre) } : null;
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function normalizeCategoriaList(raw) {
+  return normalizeCategoriaRecords(raw).map((categoria) => categoria.nombre);
 }
 
 function guardarCategorias(categorias) {
@@ -734,11 +747,11 @@ function openCategoryManager() {
 async function openCategoryManagerApi() {
   let categorias = [];
   try {
-    categorias = normalizeCategoriaList(await KajaApi.categorias({ activo: 1 }));
+    categorias = normalizeCategoriaRecords(await KajaApi.categorias({ activo: 1 }));
   } catch (error) {
-    categorias = getCategoriasDisponibles();
+    categorias = normalizeCategoriaRecords(getCategoriasDisponibles());
   }
-  if (!categorias.length) categorias = getCategoriasDisponibles();
+  if (!categorias.length) categorias = normalizeCategoriaRecords(getCategoriasDisponibles());
 
   const modalHtml = `
     <div class="modal fade show" tabindex="-1" style="display:block; background: rgba(15,23,42,0.72);">
