@@ -1781,6 +1781,12 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
    AJUSTES DEL LOGIN
 ========================= */
 
+.login-screen {
+  min-height: 100vh;
+  padding: 28px 18px 52px;
+  background: linear-gradient(180deg, #020817 0%, #0f172a 38%, #111827 100%);
+}
+
 .login-screen .login-header {
   margin-bottom: 22px;
   text-align: center;
@@ -1791,7 +1797,8 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
 }
 
 .login-shell {
-  width: min(100%, 980px);
+  width: min(100%, 1080px);
+  margin: 0 auto;
 }
 
 .login-brand-bar {
@@ -1803,8 +1810,9 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
   margin-bottom: 22px;
   border-radius: 18px;
   border: 1px solid rgba(56, 189, 248, 0.22);
-  background: rgba(15, 23, 42, 0.68);
-  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.25);
+  background: rgba(15, 23, 42, 0.78);
+  box-shadow: 0 18px 35px rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(10px);
 }
 
 .brand-mark {
@@ -1873,6 +1881,16 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
 
 .selection-card {
   min-height: 480px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.28);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selection-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 22px 38px rgba(14, 116, 144, 0.14);
 }
 
 .hidden-card {
@@ -2054,6 +2072,19 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
   border: none !important;
   color:#111827 !important;
   box-shadow: 0 12px 24px rgba(250, 204, 21, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn-kaja:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 28px rgba(250, 204, 21, 0.32);
+  filter: brightness(1.04);
+}
+
+.btn-kaja:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .login-card.locked {

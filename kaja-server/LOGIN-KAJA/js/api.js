@@ -1,8 +1,18 @@
 window.KajaApi = (() => {
-  const getApiBase = () => {
-    const configured = (window.KAJA_CONFIG && window.KAJA_CONFIG.apiBase) || window.__KAJA_API_BASE__ || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000/api' : window.location.origin + '/api');
-    return String(configured).replace(/\/+$/, '');
+  const getApiCandidates = () => {
+    const configured = (window.KAJA_CONFIG && window.KAJA_CONFIG.apiCandidates) || [];
+    const fallback = [
+      (window.KAJA_CONFIG && window.KAJA_CONFIG.apiBase) || window.__KAJA_API_BASE__ || '',
+      window.location.protocol !== 'file:' ? `${window.location.origin}/api` : '',
+      'http://localhost:3100/api',
+      'http://localhost:3000/api',
+      'https://proyecto-kaja-production.up.railway.app/api'
+    ].filter(Boolean).map((value) => String(value).replace(/\/+$/, ''));
+
+    return [...new Set([...configured, ...fallback])];
   };
+
+  const getApiBase = () => getApiCandidates()[0] || 'http://localhost:3100/api';
 
   const API_URL = getApiBase();
 
@@ -12,18 +22,30 @@ window.KajaApi = (() => {
     const token = localStorage.getItem('token');
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    const response = await fetch(`${API_URL}${path}`, { ...options, headers });
-    const contentType = response.headers.get('content-type') || '';
-    const body = contentType.includes('application/json')
-      ? await response.json().catch(() => ({}))
-      : await response.blob();
+    let lastError = null;
+    for (const base of getApiCandidates()) {
+      try {
+        const response = await fetch(`${base}${path}`, { ...options, headers });
+        const contentType = response.headers.get('content-type') || '';
+        const body = contentType.includes('application/json')
+          ? await response.json().catch(() => ({}))
+          : await response.blob();
 
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-      throw new Error(body?.mensaje || 'Sesión expirada');
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          throw new Error(body?.mensaje || 'Sesión expirada');
+        }
+        if (!response.ok) throw new Error(body?.mensaje || 'No se pudo completar la solicitud');
+        return body;
+      } catch (error) {
+        const message = String(error?.message || '').toLowerCase();
+        lastError = /failed to fetch|network|load failed|fetch/i.test(message)
+          ? new Error('No se pudo conectar con KAJA. Revisa que el backend esté levantado en el puerto correcto.')
+          : error;
+      }
     }
-    if (!response.ok) throw new Error(body?.mensaje || 'No se pudo completar la solicitud');
-    return body;
+
+    throw new Error(lastError?.message || 'No se pudo conectar con KAJA. Revisa que el backend esté levantado en el puerto correcto.');
   }
 
   const json = (path, method = 'GET', body) => request(path, {

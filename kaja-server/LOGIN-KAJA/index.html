@@ -52,12 +52,17 @@
 
   <script>
     window.KAJA_CONFIG = window.KAJA_CONFIG || {};
-    window.KAJA_CONFIG.apiBase = (
-      window.KAJA_CONFIG.apiBase ||
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000/api'
-        : 'https://proyecto-kaja-production.up.railway.app/api')
-    ).replace(/\/+$/, '');
+    const candidateApis = [
+      window.KAJA_CONFIG.apiBase,
+      window.__KAJA_API_BASE__,
+      window.location.protocol !== 'file:' ? `${window.location.origin}/api` : '',
+      'http://localhost:3100/api',
+      'http://localhost:3000/api',
+      'https://proyecto-kaja-production.up.railway.app/api'
+    ].filter(Boolean).map((value) => String(value).replace(/\/+$/, ''));
+
+    window.KAJA_CONFIG.apiBase = candidateApis[0] || 'http://localhost:3100/api';
+    window.KAJA_CONFIG.apiCandidates = [...new Set(candidateApis)];
   </script>
 
   <!-- API y JS KAJA -->

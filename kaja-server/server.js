@@ -17,10 +17,10 @@ const exportRoutes = require('./routes/export.routes');
 
 const app = express();
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173').split(',').map((value) => value.trim()).filter(Boolean);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3100,http://127.0.0.1:3100,http://localhost:5173,http://127.0.0.1:5173,https://proyecto-kaja-production.up.railway.app').split(',').map((value) => value.trim()).filter(Boolean);
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(origin) || /\.railway\.app$/i.test(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(origin) || /^https?:\/\/(.*\.)?railway\.app$/i.test(origin) || /\.railway\.app$/i.test(origin)) {
             callback(null, true);
             return;
         }

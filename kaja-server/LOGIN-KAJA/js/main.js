@@ -9,8 +9,14 @@
 const app = document.getElementById('app');
 /* BASE DE LA API DEL BACKEND KAJA */
 function getApiBase() {
-  const configured = (window.KAJA_CONFIG && window.KAJA_CONFIG.apiBase) || window.__KAJA_API_BASE__ || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000/api' : window.location.origin + '/api');
-  return String(configured).replace(/\/+$/, '');
+  const configured = (window.KAJA_CONFIG && window.KAJA_CONFIG.apiBase) || window.__KAJA_API_BASE__ || '';
+  if (configured) {
+    return String(configured).replace(/\/+$/, '');
+  }
+  if (window.location.protocol !== 'file:') {
+    return `${window.location.origin}/api`;
+  }
+  return 'http://localhost:3000/api';
 }
 
 const API_URL = getApiBase();
@@ -2108,7 +2114,7 @@ function renderLogin() {
               <h2>Login del sistema</h2>
               <form id="staffForm" class="login-form" novalidate>
                 <label class="form-label" for="staffUser">Usuario</label>
-                <input id="staffUser" type="text" value="developer" placeholder="Usuario" autocomplete="username" />
+                <input id="staffUser" type="text" placeholder="Usuario" autocomplete="username" />
                 <label class="form-label" for="staffRole">Rol</label>
                 <select id="staffRole" class="role-select">
                   <option value="ADMINISTRADOR">Administrador</option>
@@ -2118,7 +2124,7 @@ function renderLogin() {
                   <option value="DESARROLLADOR" selected>Desarrollador (acceso total)</option>
                 </select>
                 <label class="form-label" for="staffPassword">Contraseña</label>
-                <input id="staffPassword" type="password" value="KajaDev2026!" placeholder="••••••••" autocomplete="current-password" />
+                <input id="staffPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
                 <button type="submit" class="btn-kaja">Ingresar</button>
               </form>
               <p id="staffMessage" class="login-message" aria-live="polite"></p>
