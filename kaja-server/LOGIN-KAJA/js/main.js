@@ -1977,7 +1977,12 @@ function loadSection(section) {
                   <small>${producto.descripcion || 'Sin descripción'}</small>
                 </div>
               </td>
-              <td>${producto.categoria || 'General'}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span>${renderCategoryBadge(producto.categoria_icono || inferCategoryIcon(producto.categoria), producto.categoria)}</span>
+                  <span>${producto.categoria || 'General'}</span>
+                </div>
+              </td>
               <td>${producto.stock ?? 0}</td>
               <td>$${Number(producto.precio || 0).toLocaleString('es-CO')}</td>
               <td><span class="status-badge ${Number(producto.activo ?? 1) === 1 ? 'active' : 'inactive'}">${Number(producto.activo ?? 1) === 1 ? 'Activo' : 'Inactivo'}</span></td>
