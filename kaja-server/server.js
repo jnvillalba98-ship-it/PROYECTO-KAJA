@@ -109,12 +109,45 @@ const ensureRoleSchema = async () => {
     }
 };
 
+const ensureEmpresaRegistrationSchema = async () => {
+    try {
+        await conexion.query(`ALTER TABLE empresas ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) NULL`);
+        await conexion.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nombre VARCHAR(150) NULL`);
+        await conexion.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email VARCHAR(254) NULL`);
+        await conexion.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefono VARCHAR(40) NULL`);
+        await conexion.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol_id INT NULL`);
+        await conexion.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_creacion DATETIME NULL DEFAULT CURRENT_TIMESTAMP`);
+        await conexion.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+
+        await conexion.query(`
+            INSERT IGNORE INTO roles (nombre, descripcion, activo)
+            VALUES ('ADMINISTRADOR', 'Acceso completo al sistema', 1),
+                   ('CAJERO', 'Operación de ventas y caja', 1),
+                   ('INVENTARIO', 'Gestión de productos y categorías', 1),
+                   ('DESARROLLADOR', 'Superusuario con acceso total al backend', 1),
+                   ('EDITOR', 'Editor con permisos administrativos amplios', 1),
+                   ('DEVELOPER', 'Alias de desarrollador y mantenimiento técnico', 1)
+        `);
+
+        await conexion.query(`
+            UPDATE usuarios u
+            LEFT JOIN roles r ON r.nombre = u.rol
+            SET u.rol_id = r.id,
+                u.nombre = COALESCE(NULLIF(u.nombre, ''), u.usuario)
+            WHERE u.rol_id IS NULL OR u.nombre IS NULL OR u.nombre = ''
+        `);
+    } catch (error) {
+        console.warn('No se pudo asegurar la compatibilidad de registro de empresa:', error.message || error);
+    }
+};
+
 const ensureDeveloperUser = async () => {
     const username = process.env.KAJA_DEV_USER || 'developer';
     const password = process.env.KAJA_DEV_PASSWORD || 'KajaDev2026!';
     try {
         await ensureCategoriaSchema();
         await ensureRoleSchema();
+        await ensureEmpresaRegistrationSchema();
 
         const [roles] = await conexion.query("SELECT id, nombre FROM roles WHERE nombre IN ('DESARROLLADOR', 'DEVELOPER', 'ADMINISTRADOR') ORDER BY FIELD(nombre, 'DESARROLLADOR', 'DEVELOPER', 'ADMINISTRADOR') LIMIT 1");
         const role = roles[0];
@@ -149,6 +182,7 @@ const ensureDeveloperUser = async () => {
 const PORT = process.env.PORT || 3000;
 
 (async () => {
+    await ensureEmpresaRegistrationSchema();
     await ensureDeveloperUser();
     app.listen(PORT, () => {
         console.log(`Servidor ejecutándose en http://localhost:${PORT}`);

@@ -215,7 +215,10 @@ function renderApp() {
     </main>
 
     <footer>
-      <p>© Kaja - 2026</p>
+      <div class="footer-mark">
+        <i class="fas fa-box"></i>
+      </div>
+      <p>© Kaja - 2026 KAJA — Modern POS & Finance</p>
     </footer>
 
     <button id="kaja-chat-button" aria-label="Abrir Asistente KAJA">

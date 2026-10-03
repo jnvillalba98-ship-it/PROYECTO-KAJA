@@ -715,3 +715,339 @@ footer p { color: var(--muted); }
   }
   #kaja-chat-button { right: 18px; bottom: 18px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   KAJA FRONTEND VISUAL UPGRADE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ─────────────────────────────────────────────────── */
+@keyframes kajaFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+@keyframes kajaGlowPulse {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(250,204,21,0.2)); }
+  50%       { filter: drop-shadow(0 0 24px rgba(250,204,21,0.5)); }
+}
+@keyframes kajaSlideUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kajaFadeScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes kajaShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes kajaRotateSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes kajaPulseRing {
+  0%, 100% { box-shadow: 0 0 0  0   rgba(56,189,248,0.35); }
+  50%       { box-shadow: 0 0 0 14px rgba(56,189,248,0); }
+}
+
+/* ── Body: fondo con nebulosa animada ──────────────────────── */
+body {
+  background:
+    radial-gradient(ellipse at 10% 15%,  rgba(56,189,248,0.10) 0%, transparent 40%),
+    radial-gradient(ellipse at 90% 80%,  rgba(250,204,21,0.07) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.06) 0%, transparent 50%),
+    radial-gradient(circle at top, rgba(56,189,248,0.10), transparent 24%),
+    var(--bg) !important;
+}
+
+/* ── Navbar: blur mejorado ─────────────────────────────────── */
+.navbar {
+  backdrop-filter: blur(24px) saturate(1.4);
+  background: rgba(2,8,23,0.78) !important;
+  transition: background 0.3s ease;
+}
+.navbar:hover { background: rgba(2,8,23,0.88) !important; }
+
+/* ── Logo: float + glow ────────────────────────────────────── */
+.logo img,
+.mini-brand-logo,
+.footer-logo {
+  animation: kajaGlowPulse 3s ease-in-out infinite;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.logo:hover img { transform: scale(1.08) rotate(-2deg); }
+
+/* ── Nav links: underline más suave ───────────────────────── */
+.nav-links a {
+  transition: color 0.2s ease, letter-spacing 0.2s ease;
+}
+.nav-links a:hover { letter-spacing: 0.01em; }
+
+/* ── Hero h1: gradient animado + float ────────────────────── */
+.hero-copy h1 {
+  animation: kajaFloat 5s ease-in-out infinite, kajaSlideUp 0.7s ease both;
+  background: linear-gradient(135deg, #f8fafc 0%, #facc15 40%, #38bdf8 80%, #f8fafc 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: kajaShimmer 5s linear infinite, kajaFloat 6s ease-in-out infinite;
+}
+.hero-copy h2 {
+  animation: kajaSlideUp 0.8s ease 0.15s both;
+}
+.hero-copy p {
+  animation: kajaSlideUp 0.8s ease 0.25s both;
+}
+.hero-actions {
+  animation: kajaSlideUp 0.8s ease 0.35s both;
+}
+.hero-badges {
+  animation: kajaSlideUp 0.8s ease 0.45s both;
+}
+
+/* ── Eyebrow badge: shimmer ────────────────────────────────── */
+.eyebrow {
+  position: relative;
+  overflow: hidden;
+  animation: kajaSlideUp 0.5s ease both;
+}
+.eyebrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(250,204,21,0.22), transparent);
+  transform: translateX(-100%);
+  animation: kajaShimmer 3s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ── Primary btn: shimmer + lift ───────────────────────────── */
+.primary-btn {
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease !important;
+}
+.primary-btn:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 0 0 1px rgba(250,204,21,0.35), 0 22px 42px rgba(250,204,21,0.32) !important;
+}
+.primary-btn:active { transform: scale(0.97) !important; }
+
+/* ── Secondary btn: hover suave ────────────────────────────── */
+.secondary-btn {
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease !important;
+}
+.secondary-btn:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(56,189,248,0.45) !important;
+  background: rgba(56,189,248,0.08) !important;
+}
+
+/* ── Hero panel: float ──────────────────────────────────────── */
+.hero-panel {
+  animation: kajaFloat 6s ease-in-out infinite, kajaFadeScale 0.8s ease 0.3s both;
+}
+
+/* ── Panel card: glow hover ─────────────────────────────────── */
+.panel-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.panel-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 0 0 1px rgba(250,204,21,0.18),
+    0 28px 55px rgba(250,204,21,0.16) !important;
+}
+
+/* ── Status dot: parpadeante ────────────────────────────────── */
+.status::before {
+  animation: kajaPulseRing 2s ease-in-out infinite;
+}
+
+/* ── Métricas: entrada escalonada ───────────────────────────── */
+.metric {
+  animation: kajaSlideUp 0.5s ease both;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.metric:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(56,189,248,0.1);
+  border-color: rgba(56,189,248,0.3) !important;
+}
+.metrics .metric:nth-child(1) { animation-delay: 0.05s; }
+.metrics .metric:nth-child(2) { animation-delay: 0.12s; }
+.metrics .metric:nth-child(3) { animation-delay: 0.19s; }
+
+/* ── Cards de módulos: hover lift con glow ──────────────────── */
+.module-card,
+.skill-card,
+.showcase-card {
+  animation: kajaFadeScale 0.6s ease both;
+  will-change: transform;
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.32s ease, box-shadow 0.32s ease !important;
+}
+.module-card:hover,
+.skill-card:hover,
+.showcase-card:hover {
+  transform: translateY(-10px) scale(1.02) !important;
+  border-color: rgba(250,204,21,0.75) !important;
+  box-shadow:
+    0 0 0 1px rgba(250,204,21,0.18),
+    0 28px 55px rgba(250,204,21,0.14),
+    inset 0 0 22px rgba(56,189,248,0.06) !important;
+}
+
+/* Icon de módulo: rotate suave ─────────────────────────────── */
+.module-card i,
+.skill-card i,
+.showcase-card i {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+}
+.module-card:hover i,
+.skill-card:hover i,
+.showcase-card:hover i {
+  transform: scale(1.14) rotate(-6deg);
+  box-shadow: 0 0 22px rgba(250,204,21,0.22);
+}
+
+/* ── Section headers: gradiente de texto ────────────────────── */
+.section-header h2 {
+  background: linear-gradient(135deg, #f8fafc 20%, #7dd3fc 60%, #facc15 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Dashboard mock: hover ──────────────────────────────────── */
+.kaja-dash-item {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.kaja-dash-item:hover:not(.active) {
+  background: rgba(148,163,184,0.08);
+  color: var(--text);
+}
+.kaja-kpi {
+  transition: all 0.25s ease;
+}
+.kaja-kpi:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56,189,248,0.3) !important;
+  box-shadow: 0 8px 20px rgba(56,189,248,0.08);
+}
+
+/* ── Barras del chart mock: animación ───────────────────────── */
+.kaja-dash-chart span,
+.sales-chart span {
+  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.kaja-dash-chart:hover span,
+.sales-chart:hover span {
+  filter: brightness(1.15);
+}
+
+/* ── Contact toggle: shimmer ────────────────────────────────── */
+.contact-toggle {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, background 0.25s ease !important;
+}
+.contact-toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(250,204,21,0.18), transparent);
+  transform: translateX(-100%);
+  background-size: 200% 100%;
+  transition: transform 0.5s ease;
+}
+.contact-toggle:hover::after { transform: translateX(100%); }
+.contact-toggle:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+}
+
+/* ── Chat button: pulse ─────────────────────────────────────── */
+#kaja-chat-button {
+  animation: kajaPulseRing 2.5s ease-in-out infinite;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease !important;
+}
+#kaja-chat-button:hover {
+  transform: translateY(-3px) scale(1.08) !important;
+  box-shadow: 0 18px 35px rgba(14,165,233,0.4) !important;
+}
+
+/* ── Chat window: sombra mejorada ───────────────────────────── */
+#kaja-chat-window.active {
+  box-shadow: 0 0 0 1px rgba(250,204,21,0.14), -20px 30px 60px rgba(0,0,0,0.5) !important;
+}
+
+/* ── Footer brand: hover ────────────────────────────────────── */
+.footer-mark {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+.footer-brand:hover .footer-mark {
+  transform: scale(1.08) rotate(-3deg);
+  box-shadow: 0 0 24px rgba(250,204,21,0.2);
+}
+
+/* ── Reveal: transición mejorada ────────────────────────────── */
+.reveal {
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.75s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+.reveal.visible { transform: translateY(0) !important; }
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 7px; }
+::-webkit-scrollbar-track { background: rgba(2,8,23,0.5); border-radius: 999px; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--secondary));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7dd3fc, #fde68a);
+}
+
+/* ── Logo mark hover ────────────────────────────────────────── */
+.logo-mark {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+.logo:hover .logo-mark {
+  transform: scale(1.1) rotate(-4deg);
+  box-shadow: 0 0 22px rgba(250,204,21,0.22);
+}
+
+/* ── Badge: hover ───────────────────────────────────────────── */
+.badge {
+  transition: all 0.22s ease;
+}
+.badge:hover {
+  border-color: rgba(250,204,21,0.6);
+  background: rgba(250,204,21,0.1);
+  transform: translateY(-1px);
+}
+
+/* ── Contact pill: hover ─────────────────────────────────────── */
+.contact-pill {
+  transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+.contact-pill:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  background: rgba(56,189,248,0.12) !important;
+}
+
+/* ── Prefers-reduced-motion ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .hero-copy h1 {
+    -webkit-text-fill-color: var(--text);
+    background: none;
+  }
+  .section-header h2 {
+    -webkit-text-fill-color: var(--text);
+    background: none;
+  }
+}

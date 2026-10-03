@@ -2581,3 +2581,579 @@ p, span, small, label, td, th, li, button, input, select, textarea, .status-badg
 }
 .ticket-legal small { color: #94a3b8; font-size: 0.66rem; line-height: 1.35; }
 .ticket-legal small:last-child { color: #facc15; font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════
+   KAJA VISUAL UPGRADE — Animaciones, micro-interacciones y glow
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Keyframes nuevos ─────────────────────────────────────────── */
+@keyframes kajaFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes kajaPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.35); }
+  50%       { box-shadow: 0 0 0 10px rgba(56,189,248,0); }
+}
+@keyframes kajaGlowPulse {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(250,204,21,0.22)); }
+  50%       { filter: drop-shadow(0 0 26px rgba(250,204,21,0.5)); }
+}
+@keyframes kajaSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kajaSlideIn {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes kajaFadeScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes kajaShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes kajaSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes kajaOrbit {
+  0%   { transform: rotate(0deg)   translateX(60px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+@keyframes kajaParticle {
+  0%   { opacity: 0; transform: translateY(0)  scale(0); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-120px) scale(1.4); }
+}
+@keyframes kajaBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes kajaBarFill {
+  from { width: 0; }
+}
+@keyframes kajaCountUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kajaRipple {
+  to { transform: scale(3); opacity: 0; }
+}
+@keyframes kajaBorderGlow {
+  0%, 100% { border-color: rgba(250,204,21,0.35); }
+  50%       { border-color: rgba(56,189,248,0.65); }
+}
+
+/* ── Fondo animado del login ──────────────────────────────────── */
+.login-screen {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(56,189,248,0.10) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 75%, rgba(250,204,21,0.08) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.06) 0%, transparent 60%),
+    linear-gradient(180deg, #020817 0%, #0f172a 45%, #111827 100%);
+}
+
+/* Partículas CSS puras */
+.login-screen::before,
+.login-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.login-screen::before {
+  background-image:
+    radial-gradient(1.5px 1.5px at 10% 15%, rgba(56,189,248,0.55) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 22% 80%, rgba(250,204,21,0.45) 0%, transparent 100%),
+    radial-gradient(2px   2px   at 40% 35%, rgba(56,189,248,0.35) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 60% 65%, rgba(250,204,21,0.4)  0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 75% 20%, rgba(99,102,241,0.45) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 88% 50%, rgba(56,189,248,0.3)  0%, transparent 100%),
+    radial-gradient(2px   2px   at 30% 55%, rgba(250,204,21,0.25) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 50% 90%, rgba(56,189,248,0.4)  0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 70% 10%, rgba(250,204,21,0.35) 0%, transparent 100%),
+    radial-gradient(1px   1px   at 95% 30%, rgba(99,102,241,0.3)  0%, transparent 100%);
+  animation: kajaFloat 8s ease-in-out infinite;
+}
+.login-screen::after {
+  background-image:
+    radial-gradient(1px 1px at 5%  60%, rgba(56,189,248,0.3)  0%, transparent 100%),
+    radial-gradient(2px 2px at 35% 10%, rgba(250,204,21,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 45%, rgba(99,102,241,0.4)  0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 85%, rgba(56,189,248,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 70%, rgba(250,204,21,0.3) 0%, transparent 100%);
+  animation: kajaFloat 12s ease-in-out infinite reverse;
+}
+
+.login-shell { position: relative; z-index: 1; }
+
+/* ── Login cards: entrada animada ────────────────────────────── */
+.login-card {
+  animation: kajaSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
+}
+.login-grid .login-card:nth-child(2) { animation-delay: 0.1s; }
+
+.login-brand-bar {
+  animation: kajaSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
+  overflow: hidden;
+}
+.login-brand-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(56,189,248,0.07) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: kajaShimmer 4s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* Logo login flotante */
+.main-logo {
+  animation: kajaGlowPulse 3s ease-in-out infinite;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.main-logo:hover { transform: scale(1.06) rotate(-1deg); }
+
+/* ── Logo del sidebar flotante + glow ───────────────────────── */
+.sidebar-logo {
+  animation: kajaGlowPulse 3.5s ease-in-out infinite;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.sidebar-logo:hover {
+  transform: scale(1.06) rotate(-1deg) !important;
+  filter: drop-shadow(0 0 24px rgba(250,204,21,0.5)) !important;
+}
+
+/* ── Sidebar: ítem del menú mejorado ────────────────────────── */
+.menu li {
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.menu li::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0;
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg, #38bdf8, #facc15);
+  border-radius: 0 4px 4px 0;
+  transform: scaleY(0);
+  transition: transform 0.25s ease;
+}
+.menu li.active::after,
+.menu li:hover::after { transform: scaleY(1); }
+
+.menu li.active {
+  background: linear-gradient(90deg, rgba(56,189,248,0.18), rgba(99,102,241,0.14)) !important;
+  border-color: rgba(56,189,248,0.4) !important;
+  color: #f8fafc !important;
+  box-shadow:
+    0 0 0 1px rgba(56,189,248,0.2),
+    0 8px 22px rgba(56,189,248,0.12),
+    inset 0 0 18px rgba(56,189,248,0.06) !important;
+  animation: none;
+}
+.menu li.active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(56,189,248,0.12), transparent);
+  pointer-events: none;
+}
+
+/* ── KPI cards: entrada escalonada + hover lift ─────────────── */
+.card {
+  animation: kajaSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease !important;
+  will-change: transform;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  top: -30%; left: -20%;
+  width: 60%; height: 60%;
+  background: radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  opacity: 0;
+}
+.card:hover { transform: translateY(-8px) !important; }
+.card:hover::before { opacity: 1; }
+.cards .card:nth-child(1) { animation-delay: 0.05s; }
+.cards .card:nth-child(2) { animation-delay: 0.10s; }
+.cards .card:nth-child(3) { animation-delay: 0.15s; }
+.cards .card:nth-child(4) { animation-delay: 0.20s; }
+
+/* KPI icon pulse */
+.card-icon {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card:hover .card-icon {
+  transform: scale(1.12) rotate(-4deg);
+}
+
+/* ── Panel boxes: glow border animado ───────────────────────── */
+.panel-box,
+.ring-panel,
+.bars-panel {
+  animation: kajaSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+.panel-box:hover,
+.ring-panel:hover,
+.bars-panel:hover {
+  box-shadow:
+    0 0 0 1px rgba(56,189,248,0.3),
+    inset 0 0 0 1px rgba(250,204,21,0.08),
+    0 20px 40px rgba(56,189,248,0.1),
+    0 0 22px rgba(56,189,248,0.08) !important;
+  transform: translateY(-2px);
+}
+
+/* ── Progress bars: animación de llenado ────────────────────── */
+.progress-bar span {
+  animation: kajaBarFill 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.3s;
+}
+
+/* ── Tablas: filas con fade-in ───────────────────────────────── */
+.admin-manager-table tbody tr,
+.kaja-table tbody tr,
+table.table-dark tbody tr {
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.admin-manager-table tbody tr:hover,
+.kaja-table tbody tr:hover,
+table.table-dark tbody tr:hover {
+  background: rgba(56,189,248,0.06) !important;
+  transform: translateX(2px);
+}
+
+/* ── Botón KAJA: shimmer + ripple ───────────────────────────── */
+.btn-kaja {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, filter 0.22s ease !important;
+}
+.btn-kaja::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.45s ease;
+  background-size: 200% 100%;
+}
+.btn-kaja:hover::after { transform: translateX(100%); }
+.btn-kaja:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 18px 32px rgba(250,204,21,0.35) !important;
+}
+.btn-kaja:active { transform: scale(0.97) !important; }
+
+/* ── Inputs: focus con glow animado ─────────────────────────── */
+.login-card input:focus,
+.login-screen .login-card select:focus,
+.form-control:focus,
+.modal-body .form-control:focus {
+  border-color: rgba(56,189,248,0.7) !important;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.14), 0 0 12px rgba(56,189,248,0.1) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ── Toast mejorado ──────────────────────────────────────────── */
+.kaja-toast {
+  animation: kajaSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* ── Badge de estado: glow verde ────────────────────────────── */
+.admin-badge.active,
+.status-badge.active {
+  animation: kajaPulse 2.5s ease-in-out infinite;
+}
+
+/* ── Clock: glow azul pulsante ───────────────────────────────── */
+.clock {
+  animation: kajaPulse 3s ease-in-out infinite;
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+  border: 1px solid rgba(56,189,248,0.25) !important;
+  transition: color 0.3s ease;
+}
+
+/* ── Empresa indicator: shimmer ──────────────────────────────── */
+.empresa-indicator {
+  position: relative;
+  overflow: hidden;
+}
+.empresa-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(250,204,21,0.06) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: kajaShimmer 5s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ── Ticket box: borde animado ───────────────────────────────── */
+.ticket-box {
+  animation: kajaBorderGlow 4s ease-in-out infinite;
+  transition: box-shadow 0.3s ease;
+}
+.ticket-box:hover {
+  box-shadow:
+    inset 0 0 22px rgba(56,189,248,0.1),
+    0 0 18px rgba(250,204,21,0.12) !important;
+}
+
+/* ── Barra de rotación del visor estadístico ─────────────────── */
+.kaja-rotate-bar span {
+  background: linear-gradient(90deg, #38bdf8, #6366f1, #facc15) !important;
+  background-size: 200% 100% !important;
+  animation: kajaShimmer 2s linear infinite;
+}
+
+/* ── Content section: entrada suave ─────────────────────────── */
+#content {
+  animation: kajaFadeScale 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Admin card panel: hover lift ───────────────────────────── */
+.admin-card-panel {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.admin-card-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 42px rgba(2,6,23,0.28), 0 0 0 1px rgba(56,189,248,0.15) !important;
+}
+
+/* ── Dashboard header: gradiente de texto ───────────────────── */
+.top h1,
+.subheader h1 {
+  background: linear-gradient(135deg, #f8fafc 30%, #7dd3fc 70%, #facc15 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: kajaSlideIn 0.5s ease both;
+}
+
+/* ── Scroll personalizado ────────────────────────────────────── */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: rgba(15,23,42,0.4); border-radius: 999px; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #38bdf8 0%, #facc15 100%);
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,0.5);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7dd3fc 0%, #fde68a 100%);
+}
+
+/* ── Chart toggle: hover mejorado ───────────────────────────── */
+.chart-toggle {
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+.chart-toggle:hover:not(.active) {
+  background: rgba(56,189,248,0.14);
+  color: #7dd3fc;
+  transform: translateY(-1px);
+}
+.chart-toggle.active {
+  box-shadow: 0 6px 18px rgba(56,189,248,0.28);
+  transform: translateY(-1px);
+}
+
+/* ── Category filter: hover mejorado ───────────────────────── */
+.category-filter {
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+.category-filter:hover:not(.active) {
+  border-color: rgba(250,204,21,0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(250,204,21,0.1);
+}
+.category-filter.active {
+  box-shadow: 0 6px 18px rgba(250,204,21,0.3);
+  transform: translateY(-1px);
+}
+
+/* ── Sale product item: hover ───────────────────────────────── */
+.sale-product-item,
+.report-item {
+  transition: all 0.22s ease;
+  cursor: pointer;
+}
+.sale-product-item:hover,
+.report-item:hover {
+  border-color: rgba(56,189,248,0.3);
+  background: rgba(56,189,248,0.06) !important;
+  transform: translateX(3px);
+}
+
+/* ── Empty state: animación suave ───────────────────────────── */
+.empty-state,
+.empty-sale {
+  animation: kajaFadeScale 0.5s ease both;
+}
+
+/* ── Btn-link: hover suave ──────────────────────────────────── */
+.btn-link {
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-block;
+}
+.btn-link:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+.btn-link.danger:hover { color: #f87171; }
+
+/* ── Sidebar completo: gradiente sutil ──────────────────────── */
+.sidebar {
+  background: linear-gradient(180deg, #0f1623 0%, #111827 60%, #0e1520 100%) !important;
+  border-right: 1px solid rgba(56,189,248,0.1) !important;
+  position: relative;
+}
+.sidebar::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 180px;
+  background: radial-gradient(ellipse at top, rgba(56,189,248,0.07), transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Dashboard bg: gradiente sutil ─────────────────────────── */
+.dashboard {
+  background: linear-gradient(135deg, #090f1a 0%, #0f172a 50%, #0d1424 100%) !important;
+}
+.main {
+  position: relative;
+}
+.main::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(56,189,248,0.04), transparent 65%);
+  pointer-events: none;
+}
+
+/* ── login-card.active-card: glow extra ────────────────────── */
+.active-card {
+  box-shadow:
+    0 0 0 2px rgba(56,189,248,0.3),
+    0 28px 50px rgba(14,116,144,0.2),
+    inset 0 0 22px rgba(56,189,248,0.06) !important;
+  animation: kajaBorderGlow 3s ease-in-out infinite;
+}
+
+/* ── Eyebrow badge: shimmer ─────────────────────────────────── */
+.login-screen .eyebrow {
+  position: relative;
+  overflow: hidden;
+  animation: kajaSlideUp 0.4s ease both;
+}
+.login-screen .eyebrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(56,189,248,0.18), transparent);
+  transform: translateX(-100%);
+  animation: kajaShimmer 3.5s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ── login-header: animación ────────────────────────────────── */
+.login-screen .login-header {
+  animation: kajaSlideUp 0.45s ease both;
+}
+.login-screen .login-header h1 {
+  background: linear-gradient(135deg, #f8fafc 20%, #7dd3fc 60%, #facc15 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Conexión badge: animación ──────────────────────────────── */
+#kaja-conexion-badge {
+  animation: kajaSlideUp 0.6s ease both;
+  backdrop-filter: blur(10px) !important;
+  transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+/* ── Qty buttons: hover ─────────────────────────────────────── */
+.qty-btn {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.qty-btn:hover {
+  background: rgba(56,189,248,0.22);
+  transform: scale(1.12);
+}
+
+/* ── Mini btn: hover ────────────────────────────────────────── */
+.mini-btn {
+  transition: all 0.2s ease;
+}
+.mini-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+/* ── Logout: hover ──────────────────────────────────────────── */
+#logout {
+  transition: all 0.25s ease;
+  border-top: 1px solid rgba(248,113,113,0.15);
+  margin-top: 8px;
+  color: #fca5a5 !important;
+}
+#logout:hover {
+  background: rgba(248,113,113,0.12) !important;
+  border-color: rgba(248,113,113,0.35) !important;
+  color: #f87171 !important;
+  transform: translateX(6px) !important;
+}
+
+/* ── Product category badge ─────────────────────────────────── */
+.product-category {
+  transition: all 0.2s ease;
+}
+td:hover .product-category {
+  box-shadow: 0 4px 12px rgba(250,204,21,0.2);
+  transform: scale(1.04);
+}
+
+/* ── Responsive: sin romper móvil ───────────────────────────── */
+@media (max-width: 768px) {
+  .top h1,
+  .subheader h1 {
+    font-size: 1.6rem;
+    -webkit-text-fill-color: #f8fafc;
+    background: none;
+  }
+  .login-screen::before,
+  .login-screen::after { display: none; }
+  .sidebar::before { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

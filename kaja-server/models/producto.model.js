@@ -83,12 +83,34 @@ const Producto = {
         const connection = await conexion.getConnection();
         try {
             await connection.beginTransaction();
-            await connection.query('UPDATE venta_detalles SET producto_id = NULL WHERE producto_id = ? AND empresa_id = ?', [id, empresa_id]).catch(() => {});
-            await connection.query('UPDATE movimientos_inventario SET producto_id = NULL WHERE producto_id = ? AND empresa_id = ?', [id, empresa_id]).catch(() => {});
-            const [resultado] = await connection.query(
-                'DELETE FROM productos_producto WHERE id = ? AND empresa_id = ?',
-                [id, empresa_id]
+
+            const [ventaDetalleColumns] = await connection.query(
+                `SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'venta_detalles' AND column_name = 'empresa_id' LIMIT 1`
             );
+            if (ventaDetalleColumns.length) {
+                await connection.query('UPDATE venta_detalles SET producto_id = NULL WHERE producto_id = ? AND empresa_id = ?', [id, empresa_id]).catch(() => {});
+            } else {
+                await connection.query('UPDATE venta_detalles SET producto_id = NULL WHERE producto_id = ?', [id]).catch(() => {});
+            }
+
+            const [movimientoColumns] = await connection.query(
+                `SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'movimientos_inventario' AND column_name = 'producto_id' LIMIT 1`
+            );
+            if (movimientoColumns.length) {
+                await connection.query('UPDATE movimientos_inventario SET producto_id = NULL WHERE producto_id = ?', [id]).catch(() => {});
+            }
+
+            let resultado;
+            if (empresa_id == null || empresa_id === undefined || Number(empresa_id) === 0) {
+                [resultado] = await connection.query('DELETE FROM productos_producto WHERE id = ?', [id]);
+            } else {
+                [resultado] = await connection.query('DELETE FROM productos_producto WHERE id = ? AND empresa_id = ?', [id, empresa_id]);
+            }
+
+            if (!resultado.affectedRows) {
+                throw new Error('El producto no existe o no pertenece a la empresa actual');
+            }
+
             await connection.commit();
             return resultado;
         } catch (error) {
