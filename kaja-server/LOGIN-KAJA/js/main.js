@@ -1231,6 +1231,31 @@ function loadSection(section) {
         <div class="clock" id="clock"></div>
       </div>
 
+      <div class="insight-panel" style="order: -1; margin-bottom: 24px;">
+        <div class="insight-header">
+          <h2>Centro estadístico KAJA</h2>
+          <span id="resumenInventarioTag">Actualizando...</span>
+        </div>
+        <div id="resumenInventario" class="mini-chart" style="display:none;"></div>
+        <div class="kaja-viewer-nav chart-toggle-wrap" style="margin-top:0;">
+          <button class="chart-toggle active" data-stat="barras">Barras</button>
+          <button class="chart-toggle" data-stat="linea">Línea</button>
+          <button class="chart-toggle" data-stat="pastel">Pastel</button>
+          <button class="chart-toggle" data-stat="histograma">Histograma</button>
+          <button class="chart-toggle" data-stat="dispersion">Dispersión</button>
+          <button class="chart-toggle" data-stat="caja">Caja</button>
+          <button id="statAutoBtn" class="chart-toggle" type="button">Auto ▶</button>
+        </div>
+        <div class="panel-box kaja-viewer" style="margin-top:12px;">
+          <div class="panel-header"><h3 id="statViewerTitle">Barras por categoría</h3><span id="statViewerTag">Comparar valores</span></div>
+          <div class="kaja-viewer-box"><canvas id="statViewer" style="display:block;"></canvas><div id="statBoxplot" class="kaja-boxplot" style="display:none;width:100%;"></div></div>
+          <small id="statViewerDesc" style="opacity:.7;">Barras rectangulares para comparar valores entre categorías.</small>
+          <small id="statBoxplotTxt" style="opacity:.7;display:none;"></small>
+          <div class="kaja-rotate-bar"><span id="statRotateBar"></span></div>
+        </div>
+        <div style="display:none;"><canvas id="statBarras"></canvas><canvas id="statLinea"></canvas><canvas id="statPastel"></canvas><canvas id="statHistograma"></canvas><canvas id="statDispersion"></canvas></div>
+      </div>
+
       <div class="cards kaja-kpi-compact" id="dashboardCards">
         <div class="card"><div class="card-icon icon-blue"><i class="fa-solid fa-sack-dollar"></i></div><div class="card-copy"><h3>Ventas del día</h3><span id="ventasDia">$0</span></div></div>
         <div class="card"><div class="card-icon icon-gold"><i class="fa-solid fa-file-invoice"></i></div><div class="card-copy"><h3>Facturas del día</h3><span id="facturasDia">0</span></div></div>
@@ -1262,6 +1287,14 @@ function loadSection(section) {
         <label>Desde<input id="dashDesde" type="date" /></label>
         <label>Hasta<input id="dashHasta" type="date" /></label>
         <button id="dashFiltrar" class="btn btn-kaja btn-sm" type="button">Filtrar</button>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <label class="mb-0 text-sm">Turno actual:</label>
+          <select id="turnoSelect" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 140px;">
+            <option value="Mañana">Mañana (06:00)</option>
+            <option value="Tarde" selected>Tarde (14:00)</option>
+            <option value="Noche">Noche (22:00)</option>
+          </select>
+        </div>
       </div>
 
       <div class="analytics-grid">
@@ -1348,8 +1381,18 @@ function loadSection(section) {
     document.getElementById('stockMedia').style.width = `${(stockMedia / Math.max(total, 1)) * 100}%`;
     document.getElementById('stockBaja').style.width = `${(stockBaja / Math.max(total, 1)) * 100}%`;
     document.getElementById('resumenInventarioTag').textContent = `Stock ${stockTotal} · Valor $${valorTotal.toLocaleString('es-CO')}`;
-    document.getElementById('cajaActual').textContent = `$${Math.round(valorTotal * 0.18).toLocaleString('es-CO')}`;
-    document.getElementById('turnoActual').textContent = new Date().getHours() < 12 ? 'Mañana' : new Date().getHours() < 18 ? 'Tarde' : 'Noche';
+    const turnoSelect = document.getElementById('turnoSelect');
+    if (turnoSelect) {
+      const savedTurno = localStorage.getItem('kajaTurnoActual') || 'Tarde';
+      turnoSelect.value = savedTurno;
+      document.getElementById('turnoActual').textContent = savedTurno;
+      turnoSelect.addEventListener('change', () => {
+        const val = turnoSelect.value;
+        localStorage.setItem('kajaTurnoActual', val);
+        document.getElementById('turnoActual').textContent = val;
+        toastKaja('TURNO PROGRAMADO: ' + val, 'ok');
+      });
+    }
     document.getElementById('facturasDia').textContent = Math.max(8, Math.round(total / 2));
     document.getElementById('cajerosActivos').textContent = getUsuarios().filter((u) => u.rol === 'CAJERO').length;
     document.getElementById('ventasDia').textContent = formatMoney(ventasDelDia);
