@@ -870,6 +870,7 @@ async function openCategoryManagerApi() {
 async function openProductModal(producto = null) {
   const editing = Boolean(producto && producto.id);
   let categorias = [];
+  let productosExistentes = [];
   try {
     categorias = normalizeCategoriaList(await KajaApi.categorias({ activo: 1 }));
   } catch (error) {
@@ -877,11 +878,30 @@ async function openProductModal(producto = null) {
   }
   if (!categorias.length) categorias = getCategoriasDisponibles();
 
+  try {
+    productosExistentes = await fetchProductosApi();
+  } catch (e) {
+    productosExistentes = [];
+  }
+
+  // Calcular el siguiente número correlativo para el código del producto
+  let maxId = 0;
+  productosExistentes.forEach((p) => {
+    const idNum = Number(p.id || 0);
+    if (idNum > maxId) maxId = idNum;
+    const match = String(p.codigo || '').match(/PRD-(\d+)/i);
+    if (match) {
+      const codeNum = parseInt(match[1], 10);
+      if (codeNum > maxId) maxId = codeNum;
+    }
+  });
+  const siguienteNum = maxId + 1;
+  const generatedProductCode = editing ? (producto?.codigo || '') : `PRD-${String(siguienteNum).padStart(5, '0')}`;
+
   const categoriaActual = producto?.categoria_id || categorias.find((categoria) => String(categoria).toLowerCase() === String(producto?.categoria || '').toLowerCase()) || categorias[0] || '';
   const categoriaOptions = categorias.map((categoria) => `
-    <option value="${String(categoria).toLowerCase().replace(/\s+/g, '-')}" ${String(categoria).toLowerCase() === String(categoriaActual || '').toLowerCase() ? 'selected' : ''}>${categoria}</option>
-  `).join('') || '<option value="">Sin categorías</option>';
-  const generatedProductCode = editing ? (producto?.codigo || '') : `PRD-${String(Date.now()).slice(-6)}`;
+    <option value="${categoria}" ${String(categoria).toLowerCase() === String(categoriaActual || '').toLowerCase() ? 'selected' : ''}>${categoria}</option>
+  `).join('') || '<option value="General">General</option>';
 
   const modalHtml = `
     <div class="modal fade show" tabindex="-1" style="display:block; background: rgba(15, 23, 42, 0.72);">
@@ -903,11 +923,14 @@ async function openProductModal(producto = null) {
                   <input type="text" class="form-control" name="nombre" value="${producto?.nombre || ''}" required>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Categoría</label>
+                  <label class="form-label d-flex justify-content-between align-items-center">
+                    <span>Categoría</span>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-warning text-decoration-none" id="clearCategoryBtn" style="font-size:12px;">Quitar / General</button>
+                  </label>
                   <select class="form-control" name="categoria">
-                    ${categoriaOptions || '<option value="General">General</option>'}
+                    ${categoriaOptions}
                   </select>
-                  <input type="text" class="form-control mt-2" name="categoria_manual" placeholder="Escribe una categoría manual si no aparece aquí" />
+                  <input type="text" class="form-control mt-2" name="categoria_manual" placeholder="Agrupar o escribir categoría nueva..." />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Estado</label>
@@ -921,14 +944,22 @@ async function openProductModal(producto = null) {
                   <textarea class="form-control" name="descripcion" rows="3">${producto?.descripcion || ''}</textarea>
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label">Precio</label>
-                  <input type="number" class="form-control" name="precio" min="0" step="0.01" value="${Number(producto?.precio || 0)}" required>
+                  <label class="form-label">Precio compra</label>
+                  <input type="number" class="form-control" name="precio_compra" min="0" step="0.01" value="${Number(producto?.precio_compra || producto?.precioCompra || 0)}" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Precio venta</label>
+                  <input type="number" class="form-control" name="precio" min="0" step="0.01" value="${Number(producto?.precio || producto?.precioVenta || 0)}" required>
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Stock</label>
                   <input type="number" class="form-control" name="stock" min="0" step="1" value="${Number(producto?.stock || 0)}" required>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
+                  <label class="form-label">Utilidad / Margen</label>
+                  <input type="text" class="form-control bg-dark text-warning fw-bold" id="utilidadPreviewCalc" value="$0 (0%)" readonly>
+                </div>
+                <div class="col-md-6">
                   <label class="form-label">Empresa</label>
                   <input type="text" class="form-control" value="${getEmpresaLabel()}" readonly>
                 </div>
@@ -950,12 +981,34 @@ async function openProductModal(producto = null) {
 
   modal.querySelectorAll('[data-close-modal="true"]').forEach((button) => button.addEventListener('click', close));
 
+  modal.querySelector('#clearCategoryBtn')?.addEventListener('click', () => {
+    const sel = modal.querySelector('select[name="categoria"]');
+    const man = modal.querySelector('input[name="categoria_manual"]');
+    if (sel) sel.value = 'General';
+    if (man) man.value = '';
+  });
+
+  const calcUtilidad = () => {
+    const pc = Number(modal.querySelector('input[name="precio_compra"]')?.value || 0);
+    const pv = Number(modal.querySelector('input[name="precio"]')?.value || 0);
+    const diff = pv - pc;
+    const pct = pv > 0 ? ((diff / pv) * 100).toFixed(1) : '0';
+    const utilInput = modal.querySelector('#utilidadPreviewCalc');
+    if (utilInput) {
+      utilInput.value = `$${diff.toLocaleString('es-CO')} (${pct}%)`;
+      utilInput.style.color = diff >= 0 ? '#34d399' : '#f87171';
+    }
+  };
+  modal.querySelector('input[name="precio_compra"]')?.addEventListener('input', calcUtilidad);
+  modal.querySelector('input[name="precio"]')?.addEventListener('input', calcUtilidad);
+  calcUtilidad();
+
   modal.querySelector('#productForm').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     const manualCategory = String(form.categoria_manual.value || '').trim();
     const selectedCategory = form.categoria.value;
-    const categoriaNombre = manualCategory || (selectedCategory && selectedCategory !== '' ? selectedCategory.replace(/-/g, ' ') : 'General');
+    const categoriaNombre = manualCategory || selectedCategory || 'General';
     const normalizedCategory = categoriaNombre.trim();
 
     let categoriaId = null;
@@ -971,11 +1024,12 @@ async function openProductModal(producto = null) {
     }
 
     const payload = {
-      codigo: form.codigo.value.trim() || (editing ? '' : `PRD-${String(Date.now()).slice(-6)}`),
+      codigo: form.codigo.value.trim() || (editing ? '' : `PRD-${String(siguienteNum).padStart(5, '0')}`),
       nombre: form.nombre.value.trim(),
       categoria_id: categoriaId,
       categoria: normalizedCategory,
       descripcion: form.descripcion.value.trim(),
+      precio_compra: Number(form.precio_compra.value || 0),
       precio: Number(form.precio.value || 0),
       stock: Number(form.stock.value || 0),
       activo: form.activo.checked ? 1 : 0
@@ -989,11 +1043,15 @@ async function openProductModal(producto = null) {
     try {
       if (editing) {
         await KajaApi.actualizarProducto(producto.id, payload);
+        toastKaja('PRODUCTO ACTUALIZADO CORRECTAMENTE', 'ok');
       } else {
         await KajaApi.crearProducto(payload);
+        toastKaja('PRODUCTO REGISTRADO CORRECTAMENTE', 'ok');
       }
 
       close();
+      const frescos = await fetchProductosApi();
+      localStorage.setItem('kajaProductos', JSON.stringify(frescos));
       if (document.getElementById('content')) {
         loadSection('inventario');
       }
@@ -1026,6 +1084,8 @@ function bindInventoryActions() {
       try {
         await KajaApi.eliminarProductoDefinitivo(id);
         toastKaja('PRODUCTO ELIMINADO DEFINITIVAMENTE', 'ok');
+        const frescos = await fetchProductosApi();
+        localStorage.setItem('kajaProductos', JSON.stringify(frescos));
         loadSection('inventario');
       } catch (error) {
         button.disabled = false;
@@ -1847,9 +1907,9 @@ function loadSection(section) {
       <div class="inventory-panel-box">
         <div class="toolbar-row">
           <div class="category-filter-bar">
-            <button class="category-filter active" type="button">Todos</button>
+            <button class="category-filter active" type="button" data-category="Todos">Todos</button>
             ${categorias.map((categoria) => `<button class="category-filter" type="button" data-category="${categoria}">${categoria}</button>`).join('')}
-            <button class="category-filter" type="button">Bajo stock</button>
+            <button class="category-filter" type="button" data-category="Bajo stock">Bajo stock</button>
           </div>
           <div class="d-flex align-items-center gap-2">
             <span id="inventoryCountBadge" class="badge text-bg-primary">0 productos</span>
@@ -1889,11 +1949,20 @@ function loadSection(section) {
 
         const pageSize = 8;
         let currentPage = 1;
-        const total = Array.isArray(productos) ? productos.length : 0;
-        const pageCount = Math.max(1, Math.ceil(total / pageSize));
+        let activeCategoryFilter = 'Todos';
 
         const renderPage = () => {
-          const items = Array.isArray(productos) ? productos : [];
+          let items = Array.isArray(productos) ? productos : [];
+          if (activeCategoryFilter === 'Bajo stock') {
+            items = items.filter((p) => Number(p.stock || 0) <= 5);
+          } else if (activeCategoryFilter && activeCategoryFilter !== 'Todos') {
+            items = items.filter((p) => String(p.categoria || '').trim().toLowerCase() === String(activeCategoryFilter).trim().toLowerCase());
+          }
+
+          const totalFiltered = items.length;
+          const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
+          if (currentPage > pageCount) currentPage = pageCount;
+
           const start = (currentPage - 1) * pageSize;
           const slice = items.slice(start, start + pageSize);
           const rows = slice.map((producto) => `
@@ -1919,13 +1988,23 @@ function loadSection(section) {
             </tr>
           `).join('');
 
-          document.getElementById('inventoryDynamicBody').innerHTML = rows || '<tr><td colspan="8" class="text-center text-muted">No hay productos registrados.</td></tr>';
-          document.getElementById('inventoryCountBadge').textContent = `${total} productos · ${pageCount} páginas`;
+          document.getElementById('inventoryDynamicBody').innerHTML = rows || '<tr><td colspan="8" class="text-center text-muted">No hay productos registrados en esta categoría.</td></tr>';
+          document.getElementById('inventoryCountBadge').textContent = `${totalFiltered} de ${productos.length} productos · ${pageCount} páginas`;
           document.getElementById('inventoryPageInfo').textContent = `Página ${currentPage} de ${pageCount}`;
           document.getElementById('inventoryPrevPage').disabled = currentPage <= 1;
           document.getElementById('inventoryNextPage').disabled = currentPage >= pageCount;
           bindInventoryActions();
         };
+
+        document.querySelectorAll('.category-filter-bar .category-filter').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.category-filter-bar .category-filter').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCategoryFilter = btn.dataset.category || btn.textContent.trim();
+            currentPage = 1;
+            renderPage();
+          });
+        });
 
         document.getElementById('inventoryPrevPage')?.addEventListener('click', () => {
           if (currentPage > 1) {

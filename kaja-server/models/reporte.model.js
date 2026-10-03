@@ -17,6 +17,18 @@ const dashboard = async (empresaId, query = {}) => {
          FROM ventas v WHERE ${where}`,
         params
     );
+
+    // Calcular ganancia y utilidad neta en ventas emitidas con precios de compra y venta de productos
+    const [utilidadVentas] = await conexion.query(
+        `SELECT COALESCE(SUM(CASE WHEN v.estado = 'EMITIDA' THEN d.cantidad * (COALESCE(d.precio_unitario, 0) - COALESCE(p.precio_compra, 0)) ELSE 0 END), 0) AS utilidad_total,
+                COALESCE(SUM(CASE WHEN v.estado = 'EMITIDA' THEN d.cantidad * COALESCE(p.precio_compra, 0) ELSE 0 END), 0) AS costo_total
+         FROM venta_detalles d
+         INNER JOIN ventas v ON v.id = d.venta_id
+         LEFT JOIN productos_producto p ON p.id = d.producto_id
+         WHERE ${where}`,
+        params
+    );
+
     const [daily] = await conexion.query(
         `SELECT DATE(v.fecha_creacion) AS fecha,
                 COUNT(*) AS facturas,
@@ -27,8 +39,10 @@ const dashboard = async (empresaId, query = {}) => {
     );
     const [topProducts] = await conexion.query(
         `SELECT d.producto_id, d.nombre_producto AS nombre, SUM(d.cantidad) AS unidades,
-                SUM(d.subtotal) AS total
+                SUM(d.subtotal) AS total,
+                SUM(d.cantidad * (COALESCE(d.precio_unitario, 0) - COALESCE(p.precio_compra, 0))) AS utilidad
          FROM venta_detalles d INNER JOIN ventas v ON v.id = d.venta_id
+         LEFT JOIN productos_producto p ON p.id = d.producto_id
          WHERE ${where} AND v.estado = 'EMITIDA'
          GROUP BY d.producto_id, d.nombre_producto ORDER BY unidades DESC LIMIT 8`,
         params
@@ -60,13 +74,27 @@ const dashboard = async (empresaId, query = {}) => {
         params
     );
 
-    return { kpis: kpis[0], ventas_por_dia: daily, top_productos: topProducts, stock_por_nivel: stock[0], alertas: critical, ventas_por_categoria: byCategory };
+    return {
+        kpis: {
+            ...kpis[0],
+            utilidad: utilidadVentas[0]?.utilidad_total || 0,
+            costo_total: utilidadVentas[0]?.costo_total || 0
+        },
+        ventas_por_dia: daily,
+        top_productos: topProducts,
+        stock_por_nivel: stock[0],
+        alertas: critical,
+        ventas_por_categoria: byCategory
+    };
 };
 
 const inventario = async (empresaId) => {
     const [rows] = await conexion.query(
         `SELECT p.id, p.codigo, p.nombre, COALESCE(c.nombre, 'General') AS categoria,
-                p.precio, p.stock, p.activo, p.fecha_creacion
+                COALESCE(p.precio_compra, 0) AS precio_compra,
+                COALESCE(p.precio, 0) AS precio,
+                (COALESCE(p.precio, 0) - COALESCE(p.precio_compra, 0)) AS utilidad,
+                p.stock, p.activo, p.fecha_creacion
          FROM productos_producto p LEFT JOIN categorias c ON c.id = p.categoria_id
          WHERE p.empresa_id = ? ORDER BY p.nombre`,
         [empresaId]

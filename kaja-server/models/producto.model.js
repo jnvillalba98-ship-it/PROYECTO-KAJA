@@ -21,12 +21,16 @@ const Producto = {
         if (categoria_id) { filters.push('p.categoria_id = ?'); params.push(categoria_id); }
         if (activo !== '') { filters.push('p.activo = ?'); params.push(Number(activo) ? 1 : 0); }
 
-        const allowedSort = new Set(['id', 'codigo', 'nombre', 'stock', 'precio', 'fecha_creacion']);
+        const allowedSort = new Set(['id', 'codigo', 'nombre', 'stock', 'precio_compra', 'precio', 'utilidad', 'fecha_creacion']);
         const column = allowedSort.has(sortBy) ? sortBy : 'id';
         const direction = String(sortDir).toLowerCase() === 'desc' ? 'DESC' : 'ASC';
         const where = filters.join(' AND ');
         const baseSelect = `
-            SELECT p.*, COALESCE(c.nombre, 'General') AS categoria
+            SELECT p.*, COALESCE(c.nombre, 'General') AS categoria,
+                   COALESCE(p.precio_compra, 0) AS precio_compra,
+                   COALESCE(p.precio, 0) AS precio_venta,
+                   (COALESCE(p.precio, 0) - COALESCE(p.precio_compra, 0)) AS utilidad,
+                   CASE WHEN COALESCE(p.precio, 0) > 0 THEN ROUND(((COALESCE(p.precio, 0) - COALESCE(p.precio_compra, 0)) / p.precio) * 100, 2) ELSE 0 END AS margen_utilidad
             FROM productos_producto p
             LEFT JOIN categorias c ON c.id = p.categoria_id
             WHERE ${where}
@@ -46,7 +50,10 @@ const Producto = {
 
     async obtenerPorId(id, empresa_id) {
         const [resultados] = await conexion.query(
-            `SELECT p.*, COALESCE(c.nombre, 'General') AS categoria
+            `SELECT p.*, COALESCE(c.nombre, 'General') AS categoria,
+                    COALESCE(p.precio_compra, 0) AS precio_compra,
+                    COALESCE(p.precio, 0) AS precio_venta,
+                    (COALESCE(p.precio, 0) - COALESCE(p.precio_compra, 0)) AS utilidad
              FROM productos_producto p
              LEFT JOIN categorias c ON c.id = p.categoria_id
              WHERE p.id = ? AND p.empresa_id = ?`,
@@ -57,21 +64,25 @@ const Producto = {
 
     async crear(producto, empresa_id) {
         const codigoGenerado = (producto.codigo || '').trim() || await generarCodigoAutomatico(empresa_id);
+        const precioCompra = Number(producto.precio_compra ?? producto.precioCompra ?? 0);
+        const precioVenta = Number(producto.precio ?? producto.precioVenta ?? 0);
         const [resultado] = await conexion.query(
             `INSERT INTO productos_producto
-             (empresa_id, categoria_id, codigo, nombre, descripcion, precio, stock, activo, fecha_creacion)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [empresa_id, producto.categoria_id || null, codigoGenerado, producto.nombre, producto.descripcion || '', producto.precio, producto.stock, producto.activo ?? 1]
+             (empresa_id, categoria_id, codigo, nombre, descripcion, precio_compra, precio, stock, activo, fecha_creacion)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [empresa_id, producto.categoria_id || null, codigoGenerado, producto.nombre, producto.descripcion || '', precioCompra, precioVenta, producto.stock, producto.activo ?? 1]
         );
         return resultado;
     },
 
     async actualizar(id, producto, empresa_id) {
+        const precioCompra = Number(producto.precio_compra ?? producto.precioCompra ?? 0);
+        const precioVenta = Number(producto.precio ?? producto.precioVenta ?? 0);
         const [resultado] = await conexion.query(
             `UPDATE productos_producto
-             SET categoria_id = ?, codigo = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, activo = ?
+             SET categoria_id = ?, codigo = ?, nombre = ?, descripcion = ?, precio_compra = ?, precio = ?, stock = ?, activo = ?
              WHERE id = ? AND empresa_id = ?`,
-            [producto.categoria_id || null, producto.codigo, producto.nombre, producto.descripcion || '', producto.precio, producto.stock, producto.activo ?? 1, id, empresa_id]
+            [producto.categoria_id || null, producto.codigo, producto.nombre, producto.descripcion || '', precioCompra, precioVenta, producto.stock, producto.activo ?? 1, id, empresa_id]
         );
         return resultado;
     },
