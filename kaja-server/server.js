@@ -51,7 +51,85 @@ app.use('/api/productos', productoRoutes); // productos en /api/productos
 
 /* RUTA PRINCIPAL DEL SERVIDOR */
 app.get('/', (req, res) => {
-    res.send('Servidor KAJA funcionando correctamente.');
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>KAJA | Sistema de Gestión</title>
+            <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+            <style>
+                body {
+                    margin: 0; padding: 0;
+                    font-family: 'Manrope', sans-serif;
+                    background: radial-gradient(circle at top, rgba(56,189,248,0.15), transparent 30%), #020817;
+                    color: #e2e8f0;
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .container {
+                    text-align: center;
+                    max-width: 520px;
+                    padding: 40px;
+                    background: rgba(15, 23, 42, 0.85);
+                    border: 1px solid rgba(250, 204, 21, 0.35);
+                    border-radius: 24px;
+                    box-shadow: 0 25px 60px rgba(2, 6, 23, 0.8), 0 0 30px rgba(56, 189, 248, 0.15);
+                }
+                h1 {
+                    font-family: 'Fredoka', sans-serif;
+                    font-size: 2rem;
+                    margin-bottom: 12px;
+                    color: #f8fafc;
+                }
+                p {
+                    color: #94a3b8;
+                    margin-bottom: 28px;
+                    line-height: 1.6;
+                }
+                .btn-group {
+                    display: flex;
+                    gap: 16px;
+                    justify-content: center;
+                }
+                a.btn {
+                    display: inline-block;
+                    padding: 14px 24px;
+                    border-radius: 14px;
+                    font-weight: 700;
+                    text-decoration: none;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                a.btn-primary {
+                    background: linear-gradient(135deg, #38bdf8, #2563eb);
+                    color: white;
+                    box-shadow: 0 10px 25px rgba(56,189,248,0.25);
+                }
+                a.btn-secondary {
+                    background: rgba(250, 204, 21, 0.15);
+                    border: 1px solid rgba(250, 204, 21, 0.4);
+                    color: #facc15;
+                }
+                a.btn:hover {
+                    transform: translateY(-2px);
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>KAJA Sistema Empresarial</h1>
+                <p>Servidor activo y actualizado con mejoras visuales avanzadas. Seleccione el módulo al que desea ingresar:</p>
+                <div class="btn-group">
+                    <a href="/KAJA-FRONTED/" class="btn btn-secondary">Landing Pública</a>
+                    <a href="/LOGIN-KAJA/" class="btn btn-primary">Sistema / Login</a>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 /* VERIFICACION DE ESTADO DEL SERVIDOR PARA EL FRONTEND */
