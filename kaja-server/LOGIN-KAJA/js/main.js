@@ -392,13 +392,13 @@ function renderDashboard() {
     <section class="dashboard">
       <aside class="sidebar">
         <div class="sidebar-brand">
-          <div class="brand-mark-solid" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
+          <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" class="sidebar-logo" style="width: 130px; height: auto; object-fit: contain; filter: brightness(0) invert(1);" />
         </div>
 
         <div class="empresa-indicator">
           <span>Empresa activa</span>
           <div class="empresa-indicator-row">
-            <div class="mini-brand-mark neutral"><i class="fa-solid fa-building"></i></div>
+            <div class="mini-brand-mark neutral"><i class="fa-solid fa-building" style="color: #ffffff;"></i></div>
             <strong>${getEmpresaLabel()}</strong>
           </div>
         </div>
@@ -415,7 +415,7 @@ function renderDashboard() {
 
           <div class="top-actions">
             <div class="empresa-badge">
-              <div class="mini-brand-mark neutral"><i class="fa-solid fa-store"></i></div>
+              <div class="mini-brand-mark neutral"><i class="fa-solid fa-store" style="color: #ffffff;"></i></div>
               <div>
                 <span>Empresa activa</span>
                 <strong>${getEmpresaLabel()}</strong>
@@ -1601,7 +1601,9 @@ function loadSection(section) {
         <div class="ticket-box">
           <div class="invoice-head">
             <div class="invoice-brand">
-              <div class="ticket-mark" aria-label="KAJA"><i class="fa-solid fa-cash-register"></i></div>
+              <div class="ticket-mark" aria-label="KAJA" style="background: transparent; border: none; padding: 0;">
+                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" style="width: 48px; height: 48px; object-fit: contain; filter: grayscale(1);" />
+              </div>
               <div>
                 <h4>${emp.nombre}</h4>
                 <small>NIT: ${emp.nit} · ${emp.regimen}</small>

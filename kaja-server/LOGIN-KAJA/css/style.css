@@ -29,6 +29,12 @@ body{
   font-family: "Manrope", "Segoe UI", sans-serif;
 }
 
+/* Minimalist Black and White Icons across Backend */
+.sidebar i, .main i, .ticket-box i, .modal i, .btn i, .admin-card-panel i {
+  color: #ffffff !important;
+  filter: grayscale(100%) contrast(200%);
+}
+
 body, input, button, select, textarea, .main, .sidebar, .top, .card-copy, .panel-box, .activity {
   font-family: "Manrope", "Segoe UI", sans-serif;
 }
