@@ -3159,3 +3159,37 @@ td:hover .product-category {
 }
 
 /* prueba git */
+
+/* ── Enhanced Visual Polish & Modern Micro-interactions ─────── */
+.card, .panel, .dashboard-card, .table-container, .modal-content {
+  backdrop-filter: blur(16px);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.card:hover, .panel:hover, .dashboard-card:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.6), 0 0 25px rgba(56, 189, 248, 0.15);
+}
+
+.btn, button.btn-primary, button.btn-success, button.btn-warning {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.btn:hover, button.btn-primary:hover, button.btn-success:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 25px rgba(56, 189, 248, 0.3);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+}
+
+table tr {
+  transition: background-color 0.15s ease;
+}
+
+table tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.05) !important;
+}
