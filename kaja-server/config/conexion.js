@@ -7,12 +7,36 @@ const getEnv = (names, fallback) => {
     return value ?? fallback;
 };
 
+const getMysqlConfig = () => {
+    const config = {
+        host: getEnv(['MYSQLHOST', 'DB_HOST'], '127.0.0.1'),
+        user: getEnv(['MYSQLUSER', 'DB_USER', 'MYSQL_USERNAME'], 'root'),
+        password: getEnv(['MYSQLPASSWORD', 'DB_PASSWORD'], ''),
+        database: getEnv(['MYSQLDATABASE', 'DB_NAME'], 'kaja'),
+        port: Number(getEnv(['MYSQLPORT', 'DB_PORT'], '3306'))
+    };
+
+    const mysqlUrl = getEnv(['MYSQL_URL', 'DATABASE_URL'], '');
+    if (mysqlUrl) {
+        try {
+            const url = new URL(mysqlUrl);
+            if (url.hostname) config.host = url.hostname;
+            if (url.port) config.port = Number(url.port);
+            if (url.username) config.user = decodeURIComponent(url.username);
+            if (url.password) config.password = decodeURIComponent(url.password);
+            if (url.pathname && url.pathname !== '/') {
+                config.database = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+            }
+        } catch (error) {
+            console.warn('La URL de MySQL no es válida, se usará la configuración manual:', error.message || error);
+        }
+    }
+
+    return config;
+};
+
 const conexion = mysql.createPool({
-    host: getEnv(['MYSQLHOST', 'DB_HOST'], '127.0.0.1'),
-    user: getEnv(['MYSQLUSER', 'DB_USER'], 'root'),
-    password: getEnv(['MYSQLPASSWORD', 'DB_PASSWORD'], ''),
-    database: getEnv(['MYSQLDATABASE', 'DB_NAME'], 'kaja'),
-    port: Number(getEnv(['MYSQLPORT', 'DB_PORT'], '3306')),
+    ...getMysqlConfig(),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
