@@ -1231,31 +1231,6 @@ function loadSection(section) {
         <div class="clock" id="clock"></div>
       </div>
 
-      <div class="insight-panel" style="order: -1; margin-bottom: 24px;">
-        <div class="insight-header">
-          <h2>Centro estadístico KAJA</h2>
-          <span id="resumenInventarioTag">Actualizando...</span>
-        </div>
-        <div id="resumenInventario" class="mini-chart" style="display:none;"></div>
-        <div class="kaja-viewer-nav chart-toggle-wrap" style="margin-top:0;">
-          <button class="chart-toggle active" data-stat="barras">Barras</button>
-          <button class="chart-toggle" data-stat="linea">Línea</button>
-          <button class="chart-toggle" data-stat="pastel">Pastel</button>
-          <button class="chart-toggle" data-stat="histograma">Histograma</button>
-          <button class="chart-toggle" data-stat="dispersion">Dispersión</button>
-          <button class="chart-toggle" data-stat="caja">Caja</button>
-          <button id="statAutoBtn" class="chart-toggle" type="button">Auto ▶</button>
-        </div>
-        <div class="panel-box kaja-viewer" style="margin-top:12px;">
-          <div class="panel-header"><h3 id="statViewerTitle">Barras por categoría</h3><span id="statViewerTag">Comparar valores</span></div>
-          <div class="kaja-viewer-box"><canvas id="statViewer" style="display:block;"></canvas><div id="statBoxplot" class="kaja-boxplot" style="display:none;width:100%;"></div></div>
-          <small id="statViewerDesc" style="opacity:.7;">Barras rectangulares para comparar valores entre categorías.</small>
-          <small id="statBoxplotTxt" style="opacity:.7;display:none;"></small>
-          <div class="kaja-rotate-bar"><span id="statRotateBar"></span></div>
-        </div>
-        <div style="display:none;"><canvas id="statBarras"></canvas><canvas id="statLinea"></canvas><canvas id="statPastel"></canvas><canvas id="statHistograma"></canvas><canvas id="statDispersion"></canvas></div>
-      </div>
-
       <div class="cards kaja-kpi-compact" id="dashboardCards">
         <div class="card"><div class="card-icon icon-blue"><i class="fa-solid fa-sack-dollar"></i></div><div class="card-copy"><h3>Ventas del día</h3><span id="ventasDia">$0</span></div></div>
         <div class="card"><div class="card-icon icon-gold"><i class="fa-solid fa-file-invoice"></i></div><div class="card-copy"><h3>Facturas del día</h3><span id="facturasDia">0</span></div></div>
@@ -1322,6 +1297,31 @@ function loadSection(section) {
       <div class="panel-box" style="margin-top:22px;border:1px dashed rgba(56,189,248,.5);background:linear-gradient(120deg,rgba(56,189,248,.12),rgba(250,204,21,.1));">
         <div class="panel-header"><h3>KAJA APP</h3><span>Próximamente</span></div>
         <p style="color:#cbd5e1;font-size:.85rem;margin:0;">Puente backend listo en <b>/api/app/status</b> y <b>/api/app/sync</b>. El módulo móvil queda reservado para una próxima integración.</p>
+      </div>
+
+      <div class="insight-panel" style="margin-top: 24px;">
+        <div class="insight-header">
+          <h2>Centro estadístico KAJA</h2>
+          <span id="resumenInventarioTag">Actualizando...</span>
+        </div>
+        <div id="resumenInventario" class="mini-chart" style="display:none;"></div>
+        <div class="kaja-viewer-nav chart-toggle-wrap" style="margin-top:0;">
+          <button class="chart-toggle active" data-stat="barras">Barras</button>
+          <button class="chart-toggle" data-stat="linea">Línea</button>
+          <button class="chart-toggle" data-stat="pastel">Pastel</button>
+          <button class="chart-toggle" data-stat="histograma">Histograma</button>
+          <button class="chart-toggle" data-stat="dispersion">Dispersión</button>
+          <button class="chart-toggle" data-stat="caja">Caja</button>
+          <button id="statAutoBtn" class="chart-toggle" type="button">Auto ▶</button>
+        </div>
+        <div class="panel-box kaja-viewer" style="margin-top:12px;">
+          <div class="panel-header"><h3 id="statViewerTitle">Barras por categoría</h3><span id="statViewerTag">Comparar valores</span></div>
+          <div class="kaja-viewer-box"><canvas id="statViewer" style="display:block;"></canvas><div id="statBoxplot" class="kaja-boxplot" style="display:none;width:100%;"></div></div>
+          <small id="statViewerDesc" style="opacity:.7;">Barras rectangulares para comparar valores entre categorías.</small>
+          <small id="statBoxplotTxt" style="opacity:.7;display:none;"></small>
+          <div class="kaja-rotate-bar"><span id="statRotateBar"></span></div>
+        </div>
+        <div style="display:none;"><canvas id="statBarras"></canvas><canvas id="statLinea"></canvas><canvas id="statPastel"></canvas><canvas id="statHistograma"></canvas><canvas id="statDispersion"></canvas></div>
       </div>
 
       <div class="insight-panel">
