@@ -1784,86 +1784,261 @@ function loadSection(section) {
       for (let i = 0; i < base.length; i++) { h = (h * 31 + base.charCodeAt(i)) >>> 0; }
       return (h.toString(16) + base.length.toString(16)).toUpperCase().padStart(16, '0').slice(0, 32);
     }
-    function renderInvoicePreview(factura) {
-      const preview = document.getElementById('invoicePreview');
-      if (!preview) return;
+    function generarFacturaHtml(factura) {
       const emp = getEmpresaFiscal();
-      const invoiceNumber = factura.numero || factura.numero_factura;
-      const invoiceDate = factura.fecha || factura.fecha_creacion;
+      const invoiceNumber = factura.numero || factura.numero_factura || 'FAC-000';
+      const invoiceDate = factura.fecha || factura.fecha_creacion || new Date().toISOString();
       const items = factura.items || factura.detalles || [];
       const subtotal = Number(factura.subtotal || 0);
       const iva = Number(factura.iva || 0);
       const total = Number(factura.total || 0);
       const cufe = factura.cufe || generarCufe(invoiceNumber, total, emp.nit);
-      preview.innerHTML = `
-        <div class="ticket-box">
+      const estado = factura.estado || 'EMITIDA';
+
+      return `
+        <div class="ticket-box" style="position:relative;">
+          ${estado === 'ANULADA' ? '<div style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-20deg);border:3px solid #ef4444;color:#ef4444;font-size:2rem;font-weight:900;padding:8px 24px;border-radius:12px;opacity:0.85;pointer-events:none;z-index:2;">ANULADA</div>' : ''}
           <div class="invoice-head">
             <div class="invoice-brand">
               <div class="ticket-mark" aria-label="KAJA" style="background: transparent; border: none; padding: 0;">
-                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" style="width: 48px; height: 48px; object-fit: contain; filter: grayscale(1);" />
+                <img src="../KAJA-FRONTED/assets/logo-kaja.png" alt="Logo KAJA" style="width: 48px; height: 48px; object-fit: contain; filter: brightness(0) invert(1);" />
               </div>
               <div>
-                <h4>${emp.nombre}</h4>
-                <small>NIT: ${emp.nit} · ${emp.regimen}</small>
-                <small>${emp.direccion}${emp.telefono ? ' · Tel ' + emp.telefono : ''}</small>
+                <h4 style="margin:0;color:#f8fafc;font-size:1.15rem;">${emp.nombre}</h4>
+                <small style="color:#94a3b8;display:block;">NIT: ${emp.nit} · ${emp.regimen}</small>
+                <small style="color:#94a3b8;display:block;">${emp.direccion}${emp.telefono ? ' · Tel ' + emp.telefono : ''}</small>
               </div>
             </div>
-            <div class="invoice-number-wrap">
-              <span class="invoice-tag">Factura de venta</span>
-              <strong>${invoiceNumber}</strong>
+            <div class="invoice-number-wrap" style="text-align:right;">
+              <span class="invoice-tag" style="color:#facc15;font-weight:700;">FACTURA ELECTRÓNICA</span>
+              <strong style="color:#38bdf8;font-size:1.25rem;display:block;">${invoiceNumber}</strong>
+              <span class="badge" style="background:${estado === 'EMITIDA' ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'};color:${estado === 'EMITIDA' ? '#86efac' : '#fca5a5'};font-size:0.7rem;">${estado}</span>
             </div>
           </div>
-          <div class="ticket-meta">
-            <span>Fecha: ${new Date(invoiceDate).toLocaleString('es-CO')}</span>
-            <span>Forma de pago: ${factura.metodo_pago || factura.metodo || 'EFECTIVO'}</span>
+          <div class="ticket-meta" style="display:flex;justify-content:space-between;margin-top:10px;font-size:0.75rem;color:#cbd5e1;">
+            <span><b>Fecha:</b> ${new Date(invoiceDate).toLocaleString('es-CO')}</span>
+            <span><b>Medio de pago:</b> <span class="badge bg-secondary text-white">${factura.metodo_pago || factura.metodo || 'EFECTIVO'}</span></span>
           </div>
-          <div class="ticket-meta">
-            <span>Adquiriente: Consumidor final</span>
-            <span>CC/NIT: 222222222222</span>
+          <div class="ticket-meta" style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.75rem;color:#cbd5e1;">
+            <span><b>Adquiriente:</b> Consumidor final</span>
+            <span><b>Caja:</b> ${factura.caja || 'Caja principal'}</span>
           </div>
-          <table class="invoice-table">
+          <table class="invoice-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
             <thead>
-              <tr>
-                <th>Descripción</th>
-                <th>Cant.</th>
-                <th>Vlr unit.</th>
-                <th>Vlr total</th>
+              <tr style="border-bottom:1px solid rgba(148,163,184,0.2);color:#7dd3fc;font-size:0.75rem;text-transform:uppercase;">
+                <th style="padding:8px 4px;text-align:left;">Descripción</th>
+                <th style="padding:8px 4px;text-align:center;">Cant.</th>
+                <th style="padding:8px 4px;text-align:right;">Vlr Unit.</th>
+                <th style="padding:8px 4px;text-align:right;">Subtotal</th>
               </tr>
             </thead>
             <tbody>
-              ${items.map((item) => {
+              ${items.length ? items.map((item) => {
                 const pu = Number(item.precio ?? item.precio_unitario) || 0;
                 const cant = Number(item.cantidad || 1);
                 return `
-                <tr>
-                  <td>${item.nombre || item.nombre_producto}</td>
-                  <td>${cant}</td>
-                  <td>${formatMoney(pu)}</td>
-                  <td>${formatMoney(pu * cant)}</td>
+                <tr style="border-bottom:1px solid rgba(148,163,184,0.08);color:#f8fafc;font-size:0.82rem;">
+                  <td style="padding:8px 4px;">${item.nombre || item.nombre_producto || 'Producto'}</td>
+                  <td style="padding:8px 4px;text-align:center;">${cant}</td>
+                  <td style="padding:8px 4px;text-align:right;">${formatMoney(pu)}</td>
+                  <td style="padding:8px 4px;text-align:right;color:#7dd3fc;font-weight:600;">${formatMoney(pu * cant)}</td>
                 </tr>`;
-              }).join('')}
+              }).join('') : '<tr><td colspan="4" style="text-align:center;padding:12px;color:#94a3b8;">Sin detalles de productos</td></tr>'}
             </tbody>
           </table>
-          <div class="ticket-summary">
-            <div><span>Subtotal (base gravable)</span><strong>${formatMoney(subtotal)}</strong></div>
-            <div><span>IVA 19%</span><strong>${formatMoney(iva)}</strong></div>
-            <div class="total"><span>Total a pagar</span><strong>${formatMoney(total)}</strong></div>
+          <div class="ticket-summary" style="margin-top:12px;border-top:1px dashed rgba(148,163,184,0.3);padding-top:10px;">
+            <div style="display:flex;justify-content:space-between;color:#cbd5e1;font-size:0.85rem;margin-bottom:4px;"><span>Subtotal base gravable</span><strong>${formatMoney(subtotal)}</strong></div>
+            <div style="display:flex;justify-content:space-between;color:#cbd5e1;font-size:0.85rem;margin-bottom:4px;"><span>IVA discriminado (19%)</span><strong>${formatMoney(iva)}</strong></div>
+            <div class="total" style="display:flex;justify-content:space-between;color:#facc15;font-size:1.15rem;font-weight:800;border-top:1px solid rgba(148,163,184,0.2);padding-top:6px;margin-top:6px;"><span>TOTAL A PAGAR</span><strong>${formatMoney(total)}</strong></div>
           </div>
-          <div class="ticket-legal">
-            <small>${emp.resolucion}</small>
-            <small>Autorización de numeración DIAN · Prefijo ${emp.prefijo} · Régimen: ${emp.regimen}</small>
-            <small>CUFE: ${cufe}</small>
-            <small>Esta factura de venta se asimila en todos sus efectos a una letra de cambio (Art. 774 C.Co.).</small>
-            <small>Generada por KAJA · Software de facturación</small>
+          <div class="ticket-legal" style="margin-top:12px;border-top:1px dashed rgba(148,163,184,0.25);padding-top:8px;font-size:0.68rem;color:#94a3b8;">
+            <small style="display:block;">${emp.resolucion}</small>
+            <small style="display:block;">Autorización DIAN · Prefijo ${emp.prefijo} · Régimen: ${emp.regimen}</small>
+            <small style="display:block;word-break:break-all;">CUFE: ${cufe}</small>
+            <small style="display:block;color:#facc15;margin-top:4px;">Documento oficial de venta KAJA · Generado electrónicamente</small>
           </div>
         </div>
       `;
     }
 
+    function renderInvoicePreview(factura) {
+      const preview = document.getElementById('invoicePreview');
+      if (!preview) return;
+      preview.innerHTML = generarFacturaHtml(factura);
+    }
+
+    // MODAL EN PANTALLA PARA VER CUALQUIER VENTA CON DETALLES E IMPRESIÓN DIRECTA
+    function openInvoiceModal(factura) {
+      if (!factura) return;
+      document.querySelector('#modalVentaEnPantalla')?.remove();
+      const invoiceNumber = factura.numero || factura.numero_factura || 'Factura';
+
+      const modalHtml = `
+        <div class="modal fade show" id="modalVentaEnPantalla" tabindex="-1" style="display:block; background: rgba(2, 8, 23, 0.82); backdrop-filter: blur(8px); z-index: 9999;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background:#0f172a; color:#f8fafc; border:1px solid rgba(250,204,21,0.4); border-radius:20px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+              <div class="modal-header d-flex justify-content-between align-items-center" style="border-bottom:1px solid rgba(148,163,184,0.18); padding:16px 20px;">
+                <h5 class="modal-title d-flex align-items-center gap-2" style="font-size:1.15rem; font-weight:800; color:#f8fafc; margin:0;">
+                  <i class="fa-solid fa-receipt" style="color:#facc15;"></i>
+                  Venta en pantalla: ${invoiceNumber}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-close-venta-modal="true" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body" style="padding:20px; max-height:75vh; overflow-y:auto;">
+                ${generarFacturaHtml(factura)}
+              </div>
+              <div class="modal-footer d-flex justify-content-between align-items-center" style="border-top:1px solid rgba(148,163,184,0.18); padding:14px 20px;">
+                <div class="d-flex gap-2">
+                  <button type="button" id="modalPrintPdfBtn" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-print text-warning"></i> Imprimir / PDF
+                  </button>
+                  <button type="button" id="modalExportSingleExcelBtn" class="btn btn-outline-success btn-sm d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> Exportar esta venta
+                  </button>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-close-venta-modal="true">Cerrar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      const modal = document.getElementById('modalVentaEnPantalla');
+      const close = () => modal?.remove();
+      modal?.querySelectorAll('[data-close-venta-modal="true"]').forEach((btn) => btn.addEventListener('click', close));
+
+      // Imprimir desde el modal
+      document.getElementById('modalPrintPdfBtn')?.addEventListener('click', () => {
+        imprimirFacturaHtml(generarFacturaHtml(factura));
+      });
+
+      // Exportar solo esta factura a Excel
+      document.getElementById('modalExportSingleExcelBtn')?.addEventListener('click', () => {
+        exportarFacturaIndividualExcel(factura);
+      });
+    }
+
+    function mostrarVentaEnPantalla(factura) {
+      saveLastInvoice(factura);
+      renderInvoicePreview(factura);
+      const preview = document.getElementById('invoicePreview');
+      if (preview) {
+        preview.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        preview.classList.add('ticket-highlight');
+        setTimeout(() => preview.classList.remove('ticket-highlight'), 1600);
+      }
+      openInvoiceModal(factura);
+    }
+
+    function imprimirFacturaHtml(bodyContent) {
+      const popup = window.open('', '_blank', 'width=900,height=1200');
+      if (!popup) {
+        alert('El navegador bloqueó la ventana de impresión. Habilita las ventanas emergentes.');
+        return;
+      }
+      const printHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Factura KAJA</title>
+            <style>
+              body { font-family: Arial, sans-serif; background: #fff; color: #0f172a; padding: 24px; }
+              .ticket-box { max-width: 650px; margin: 0 auto; border: 1px solid #dfe7ee; border-radius: 14px; padding: 22px; }
+              .invoice-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+              .invoice-brand { display:flex; gap:12px; align-items:flex-start; }
+              .invoice-number-wrap strong { display:block; font-size: 1.3rem; }
+              .ticket-meta { display:flex; justify-content:space-between; font-size:12px; color:#475569; margin-top:6px; }
+              table { width:100%; border-collapse:collapse; margin:16px 0; }
+              th, td { border-bottom:1px solid #e2e8f0; padding:8px 4px; font-size:12px; text-align:left; color:#0f172a; }
+              .ticket-summary div { display:flex; justify-content:space-between; padding:5px 0; color:#475569; font-size:13px; }
+              .ticket-summary .total { font-size:16px; font-weight:700; color:#0f172a; border-top:1px solid #cbd5e1; padding-top:8px; }
+              .ticket-legal { margin-top:16px; font-size:10px; color:#64748b; line-height:1.4; border-top:1px dashed #cbd5e1; padding-top:8px; }
+              @media print { body { margin: 0; padding: 10px; } .ticket-box { border: none; } }
+            </style>
+          </head>
+          <body>${bodyContent}</body>
+        </html>
+      `;
+      popup.document.open();
+      popup.document.write(printHtml);
+      popup.document.close();
+      popup.focus();
+      setTimeout(() => popup.print(), 350);
+    }
+
+    // EXPORTADOR EN EXCEL RESILIENTE Y COMPLETO
+    async function exportarVentasExcel(params = {}) {
+      toastKaja('Generando archivo Excel de ventas...', 'ok');
+      try {
+        await KajaApi.exportarVentas(params);
+        toastKaja('Ventas exportadas exitosamente a Excel', 'ok');
+      } catch (errApi) {
+        console.warn('Fallo endpoint binario de Excel, activando exportador estructurado de respaldo:', errApi);
+        try {
+          const resp = await KajaApi.ventas({ ...params, page: 1, pageSize: 500 });
+          const rows = (resp && resp.data) || [];
+          if (!rows.length) {
+            toastKaja('No hay ventas para exportar en el rango seleccionado', 'warn');
+            return;
+          }
+          // Crear CSV/Excel con codificación UTF-8 con BOM
+          let csv = '\uFEFFFactura;Fecha;Hora;Caja;Medio de Pago;Usuario/Cajero;Estado;Subtotal;IVA (19%);Total\n';
+          rows.forEach((v) => {
+            const fDate = new Date(v.fecha_creacion);
+            const fecha = fDate.toLocaleDateString('es-CO');
+            const hora = fDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            csv += `"${v.numero_factura || ''}";"${fecha}";"${hora}";"${v.caja || 'Caja principal'}";"${v.metodo_pago || 'EFECTIVO'}";"${v.usuario || ''}";"${v.estado || 'EMITIDA'}";${Number(v.subtotal || 0)};${Number(v.iva || 0)};${Number(v.total || 0)}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `kaja-ventas-${new Date().toISOString().slice(0, 10)}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          toastKaja('Archivo de ventas exportado correctamente', 'ok');
+        } catch (e2) {
+          toastKaja('Error al exportar ventas: ' + e2.message, 'err');
+        }
+      }
+    }
+
+    function exportarFacturaIndividualExcel(factura) {
+      const num = factura.numero || factura.numero_factura || 'FAC';
+      const items = factura.items || factura.detalles || [];
+      let csv = `\uFEFFDetalle de Factura: ${num}\n`;
+      csv += `Fecha: ${new Date(factura.fecha_creacion || factura.fecha || Date.now()).toLocaleString('es-CO')}\n`;
+      csv += `Forma de Pago: ${factura.metodo_pago || 'EFECTIVO'}\n`;
+      csv += `Estado: ${factura.estado || 'EMITIDA'}\n\n`;
+      csv += 'Item;Producto;Cantidad;Precio Unitario;Subtotal\n';
+      items.forEach((it, idx) => {
+        const pu = Number(it.precio ?? it.precio_unitario) || 0;
+        const cant = Number(it.cantidad || 1);
+        csv += `${idx + 1};"${it.nombre || it.nombre_producto || ''}";${cant};${pu};${pu * cant}\n`;
+      });
+      csv += `\n;;Subtotal:;${Number(factura.subtotal || 0)}\n`;
+      csv += `;;IVA (19%):;${Number(factura.iva || 0)}\n`;
+      csv += `;;Total:;${Number(factura.total || 0)}\n`;
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `factura-${num}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toastKaja('Factura exportada a Excel', 'ok');
+    }
+
     content.innerHTML = `
       <div class="subheader">
         <div><h1>Punto de venta</h1><p>Venta rápida con facturación y reportes por caja</p></div>
-        <div class="d-flex gap-2"><button id="newSaleBtn" class="btn btn-kaja btn-sm">+ Nueva venta</button><button id="exportSalesBtn" class="btn btn-outline-light btn-sm">Exportar Excel</button><button id="exportInvoicePdfBtn" class="btn btn-outline-light btn-sm">Exportar PDF</button></div>
+        <div class="d-flex gap-2"><button id="newSaleBtn" class="btn btn-kaja btn-sm">+ Nueva venta</button><button id="exportSalesBtn" class="btn btn-success btn-sm d-flex align-items-center gap-1"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button><button id="exportInvoicePdfBtn" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1"><i class="fa-solid fa-file-pdf"></i> Imprimir / PDF</button></div>
       </div>
       <div class="sale-layout">
         <div class="sale-panel panel-box">
@@ -1914,11 +2089,12 @@ function loadSection(section) {
       </div>
       <div class="panel-box" style="margin-top:12px;">
         <div class="panel-header"><h3>Reporte de facturas</h3><span>Guardadas en servidor</span></div>
-        <div class="d-flex gap-2 flex-wrap" style="margin-bottom:10px;">
+        <div class="d-flex gap-2 flex-wrap align-items-center" style="margin-bottom:10px;">
           <input id="facDesde" type="date" class="form-control form-control-sm" style="width:auto;" />
           <input id="facHasta" type="date" class="form-control form-control-sm" style="width:auto;" />
           <input id="facBuscar" type="text" class="form-control form-control-sm" placeholder="Buscar N° factura" style="width:200px;" />
-          <button id="facFiltrar" class="btn btn-kaja btn-sm" type="button">Buscar</button>
+          <button id="facFiltrar" class="btn btn-kaja btn-sm" type="button"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+          <button id="facExportarExcel" class="btn btn-outline-success btn-sm ms-auto" type="button"><i class="fa-solid fa-file-excel"></i> Exportar reporte a Excel</button>
         </div>
         <div class="table-responsive">
           <table class="table table-dark table-striped table-hover table-bordered table-sm align-middle">
@@ -1936,59 +2112,25 @@ function loadSection(section) {
       document.getElementById('barcodeInput')?.focus();
     });
 
-    document.getElementById('exportSalesBtn')?.addEventListener('click', () => {
-      const desde = (document.getElementById('facDesde') && document.getElementById('facDesde').value) || new Date().toISOString().slice(0, 10);
-      const hasta = (document.getElementById('facHasta') && document.getElementById('facHasta').value) || desde;
-      KajaApi.exportarVentas({ desde, hasta }).catch((error) => alert(error.message));
-    });
+    const triggerSalesExport = () => {
+      const desde = (document.getElementById('facDesde') && document.getElementById('facDesde').value) || '';
+      const hasta = (document.getElementById('facHasta') && document.getElementById('facHasta').value) || '';
+      const params = {};
+      if (desde) params.desde = desde;
+      if (hasta) params.hasta = hasta;
+      exportarVentasExcel(params);
+    };
+
+    document.getElementById('exportSalesBtn')?.addEventListener('click', triggerSalesExport);
+    document.getElementById('facExportarExcel')?.addEventListener('click', triggerSalesExport);
 
     document.getElementById('exportInvoicePdfBtn')?.addEventListener('click', () => {
       const preview = document.getElementById('invoicePreview');
-      if (!preview || !preview.innerHTML.trim()) {
-        alert('Primero genera una factura para exportarla en PDF.');
+      if (!preview || !preview.innerHTML.trim() || preview.innerHTML.includes('aparecerá aquí')) {
+        toastKaja('Primero selecciona o genera una factura para imprimir/exportar en PDF', 'warn');
         return;
       }
-
-      const popup = window.open('', '_blank', 'width=900,height=1200');
-      if (!popup) {
-        alert('El navegador bloqueó la ventana para impresión PDF. Permite las ventanas emergentes.');
-        return;
-      }
-
-      const printHtml = `
-        <!DOCTYPE html>
-        <html lang="es">
-          <head>
-            <meta charset="UTF-8" />
-            <title>Factura KAJA</title>
-            <style>
-              body { font-family: Arial, sans-serif; background: #fff; color: #0f172a; padding: 24px; }
-              .ticket-box { max-width: 720px; margin: 0 auto; border: 1px solid #dfe7ee; border-radius: 18px; padding: 24px; }
-              .invoice-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
-              .invoice-brand { display:flex; gap:12px; align-items:flex-start; }
-              .ticket-mark { display:flex; width:44px; height:44px; border-radius:12px; background:#fef3c7; color:#b45309; align-items:center; justify-content:center; font-size:20px; }
-              .invoice-number-wrap strong { display:block; font-size: 1.4rem; }
-              .invoice-tag { display:inline-block; font-size: 12px; letter-spacing: 0.08em; color:#b45309; text-transform: uppercase; }
-              .ticket-meta { display:flex; justify-content:space-between; gap:12px; font-size:12px; color:#475569; margin-top:8px; }
-              table { width:100%; border-collapse:collapse; margin:18px 0; }
-              th, td { border-bottom:1px solid #e2e8f0; padding:8px 6px; font-size:12px; text-align:left; }
-              .ticket-summary div { display:flex; justify-content:space-between; padding:6px 0; color:#475569; }
-              .ticket-summary .total { font-size:16px; font-weight:700; color:#111827; }
-              .ticket-legal { margin-top:18px; display:flex; flex-direction:column; gap:6px; font-size:11px; color:#475569; }
-              @media print { body { margin: 0; } }
-            </style>
-          </head>
-          <body>
-            ${preview.innerHTML}
-          </body>
-        </html>
-      `;
-
-      popup.document.open();
-      popup.document.write(printHtml);
-      popup.document.close();
-      popup.focus();
-      setTimeout(() => popup.print(), 350);
+      imprimirFacturaHtml(preview.innerHTML);
     });
 
     document.getElementById('addSaleProduct').addEventListener('click', () => {
@@ -2029,8 +2171,7 @@ function loadSection(section) {
       try {
         if (actionButton.dataset.action === 'select-invoice') {
           const factura = await KajaApi.obtenerVenta(invoiceId);
-          saveLastInvoice(factura);
-          renderInvoicePreview(factura);
+          mostrarVentaEnPantalla(factura);
           return;
         }
         if (actionButton.dataset.action === 'annul-invoice') {
@@ -2052,13 +2193,12 @@ function loadSection(section) {
           items: cart.map((item) => ({ producto_id: item.id, cantidad: item.cantidad }))
         });
         const factura = response.data;
-        saveLastInvoice(factura);
-        renderInvoicePreview(factura);
         sessionStorage.removeItem(cartKey);
         renderSalesCart();
         renderReports();
         renderFacturasTabla();
-        toastKaja('VENTA ' + factura.numero_factura + ' EN ' + (factura.metodo_pago || metodo), 'ok');
+        mostrarVentaEnPantalla(factura);
+        toastKaja('VENTA ' + factura.numero_factura + ' REGISTRADA CON ÉXITO', 'ok');
         localStorage.setItem('kajaProductos', JSON.stringify(await fetchProductosApi()));
       } catch (error) { toastKaja(error.message || 'NO SE PUDO REGISTRAR LA VENTA', 'err'); }
     });
@@ -2084,7 +2224,11 @@ function loadSection(section) {
     document.getElementById('facturasBody')?.addEventListener('click', (ev) => {
       const ver = ev.target.closest('[data-fac-ver]');
       const anular = ev.target.closest('[data-fac-anular]');
-      if (ver) { KajaApi.obtenerVenta(ver.dataset.facVer).then((fac) => { saveLastInvoice(fac); renderInvoicePreview(fac); }).catch((e) => alert(e.message)); }
+      if (ver) {
+        KajaApi.obtenerVenta(ver.dataset.facVer)
+          .then((fac) => mostrarVentaEnPantalla(fac))
+          .catch((e) => toastKaja('No se pudo cargar la venta: ' + e.message, 'err'));
+      }
       if (anular) { if (!window.confirm('¿Anular factura?')) return; KajaApi.anularVenta(anular.dataset.facAnular).then(() => { renderFacturasTabla(); renderReports(); }).catch((e) => alert(e.message)); }
     });
     renderSalesCart();

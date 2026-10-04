@@ -33,17 +33,29 @@ const ventas = async (empresaId, query = {}) => {
     if (query.desde) { filters.push('v.fecha_creacion >= ?'); params.push(`${query.desde} 00:00:00`); }
     if (query.hasta) { filters.push('v.fecha_creacion <= ?'); params.push(`${query.hasta} 23:59:59`); }
     if (query.estado) { filters.push('v.estado = ?'); params.push(query.estado); }
-    const [rows] = await conexion.query(
-        `SELECT v.numero_factura, v.fecha_creacion, v.caja, u.usuario AS usuario,
-                v.estado, v.subtotal, v.iva, v.total
-         FROM ventas v LEFT JOIN usuarios u ON u.id = v.usuario_id
-         WHERE ${filters.join(' AND ')} ORDER BY v.fecha_creacion DESC`,
-        params
-    );
+    let rows = [];
+    try {
+        [rows] = await conexion.query(
+            `SELECT v.numero_factura, v.fecha_creacion, v.caja, COALESCE(v.metodo_pago, 'EFECTIVO') AS metodo_pago,
+                    u.usuario AS usuario, v.estado, v.subtotal, v.iva, v.total
+             FROM ventas v LEFT JOIN usuarios u ON u.id = v.usuario_id
+             WHERE ${filters.join(' AND ')} ORDER BY v.fecha_creacion DESC`,
+            params
+        );
+    } catch (e) {
+        [rows] = await conexion.query(
+            `SELECT v.numero_factura, v.fecha_creacion, v.caja, 'EFECTIVO' AS metodo_pago,
+                    u.usuario AS usuario, v.estado, v.subtotal, v.iva, v.total
+             FROM ventas v LEFT JOIN usuarios u ON u.id = v.usuario_id
+             WHERE ${filters.join(' AND ')} ORDER BY v.fecha_creacion DESC`,
+            params
+        );
+    }
     return createWorkbook('Ventas', [
         { header: 'Factura', key: 'numero_factura' },
         { header: 'Fecha', key: 'fecha_creacion' },
         { header: 'Caja', key: 'caja' },
+        { header: 'Método de Pago', key: 'metodo_pago' },
         { header: 'Usuario', key: 'usuario' },
         { header: 'Estado', key: 'estado' },
         { header: 'Subtotal', key: 'subtotal' },
