@@ -602,21 +602,161 @@ function mostrarStatKaja(tipo) {
   const base = { responsive: true, maintainAspectRatio: false, animation: { duration: 900, easing: 'easeOutQuart' }, plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 12, weight: 'bold' }, padding: 16 } }, tooltip: { backgroundColor: '#0f172a', borderColor: 'rgba(250,204,21,.4)', borderWidth: 1, titleColor: '#facc15', bodyColor: '#f8fafc', padding: 12, callbacks: { label: (c) => ' ' + formatMoney(c.parsed.y ?? c.parsed ?? c.raw) } } }, scales: { x: { grid: { color: 'rgba(148,163,184,.08)' }, ticks: { color: '#cbd5e1', font: { size: 11 } } }, y: { grid: { color: 'rgba(148,163,184,.1)' }, ticks: { color: '#cbd5e1', callback: (v) => v >= 1000 ? (v / 1000) + 'k' : v } } } };
   let cfg = null;
   if (tipo === 'barras') {
-    const top = (datos.top && datos.top.length ? datos.top : datos.porCat.map((c) => ({ nombre: c.categoria, total: c.total }))).slice(0, 8);
-    cfg = { type: 'bar', data: { labels: top.map((c) => (c.nombre || '').slice(0, 14)), datasets: [{ label: 'INGRESOS POR PRODUCTO', data: top.map((c) => Number(c.total || 0)), backgroundColor: gradAzul, borderColor: '#38bdf8', borderWidth: 1, borderRadius: 10, maxBarThickness: 42 }] }, options: base };
+    const hayVentas = (datos.top && datos.top.length && datos.top.some((t) => Number(t.total || 0) > 0)) ||
+                      (datos.porCat && datos.porCat.length && datos.porCat.some((c) => Number(c.total || 0) > 0));
+    let items = [];
+    let dsLabel = 'INGRESOS POR PRODUCTO';
+    if (hayVentas) {
+      items = (datos.top && datos.top.length ? datos.top : datos.porCat.map((c) => ({ nombre: c.categoria, total: c.total }))).slice(0, 8);
+    } else if (datos.inv && datos.inv.length) {
+      dsLabel = 'STOCK POR PRODUCTO (INVENTARIO)';
+      items = [...datos.inv].sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0)).slice(0, 8).map((p) => ({ nombre: p.nombre, total: Number(p.stock || 0) }));
+    }
+    cfg = {
+      type: 'bar',
+      data: {
+        labels: items.length ? items.map((c) => (c.nombre || '').slice(0, 16)) : ['Sin productos'],
+        datasets: [{
+          label: dsLabel,
+          data: items.length ? items.map((c) => Number(c.total || 0)) : [0],
+          backgroundColor: gradAzul,
+          borderColor: '#38bdf8',
+          borderWidth: 1,
+          borderRadius: 10,
+          maxBarThickness: 42
+        }]
+      },
+      options: {
+        ...base,
+        plugins: {
+          ...base.plugins,
+          tooltip: {
+            ...base.plugins.tooltip,
+            callbacks: {
+              label: (c) => ' ' + (dsLabel.includes('STOCK') ? (c.parsed.y + ' unidades') : formatMoney(c.parsed.y ?? c.parsed ?? c.raw))
+            }
+          }
+        }
+      }
+    };
   }
-  if (tipo === 'linea') cfg = { type: 'line', data: { labels: datos.porDia.map((d) => String(d.fecha).slice(5)), datasets: [{ label: 'VENTAS DIARIAS', data: datos.porDia.map((d) => Number(d.total || 0)), borderColor: '#34d399', backgroundColor: gradVerde, fill: true, tension: .45, pointRadius: 5, pointBackgroundColor: '#facc15', pointBorderColor: '#0f172a', borderWidth: 3 }] }, options: base };
-  if (tipo === 'pastel') cfg = { type: 'doughnut', data: { labels: datos.porCat.map((c) => c.categoria), datasets: [{ label: 'PARTICIPACION', data: datos.porCat.map((c) => Number(c.total || 0)), backgroundColor: ['#38bdf8', '#facc15', '#34d399', '#f87171', '#a78bfa', '#fb923c'], borderColor: '#0f172a', borderWidth: 3, hoverOffset: 10 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '62%', animation: { animateRotate: true, duration: 1000 }, plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0', padding: 14 } }, tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + formatMoney(c.parsed) } } } } };
+  if (tipo === 'linea') {
+    const dias = (datos.porDia && datos.porDia.length) ? datos.porDia : [
+      { fecha: 'Hoy', total: Number(datos.kpis?.ventas || 0) }
+    ];
+    cfg = {
+      type: 'line',
+      data: {
+        labels: dias.map((d) => String(d.fecha).slice(5) || d.fecha),
+        datasets: [{
+          label: 'VENTAS DIARIAS',
+          data: dias.map((d) => Number(d.total || 0)),
+          borderColor: '#34d399',
+          backgroundColor: gradVerde,
+          fill: true,
+          tension: .45,
+          pointRadius: 5,
+          pointBackgroundColor: '#facc15',
+          pointBorderColor: '#0f172a',
+          borderWidth: 3
+        }]
+      },
+      options: base
+    };
+  }
+  if (tipo === 'pastel') {
+    const hayCatVentas = datos.porCat && datos.porCat.length && datos.porCat.some((c) => Number(c.total || 0) > 0);
+    let labels = [];
+    let vals = [];
+    let dsLabel = 'PARTICIPACION EN VENTAS';
+    if (hayCatVentas) {
+      labels = datos.porCat.map((c) => c.categoria);
+      vals = datos.porCat.map((c) => Number(c.total || 0));
+    } else if (datos.inv && datos.inv.length) {
+      dsLabel = 'STOCK POR CATEGORIA';
+      const catMap = {};
+      datos.inv.forEach((p) => {
+        const c = p.categoria || 'General';
+        catMap[c] = (catMap[c] || 0) + Number(p.stock || 1);
+      });
+      labels = Object.keys(catMap);
+      vals = Object.values(catMap);
+    } else {
+      labels = ['Sin categorias'];
+      vals = [1];
+    }
+    cfg = {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          label: dsLabel,
+          data: vals,
+          backgroundColor: ['#38bdf8', '#facc15', '#34d399', '#f87171', '#a78bfa', '#fb923c', '#38bdf8'],
+          borderColor: '#0f172a',
+          borderWidth: 3,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        animation: { animateRotate: true, duration: 1000 },
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#e2e8f0', padding: 14 } },
+          tooltip: {
+            callbacks: {
+              label: (c) => ' ' + c.label + ': ' + (dsLabel.includes('STOCK') ? (c.parsed + ' und') : formatMoney(c.parsed))
+            }
+          }
+        }
+      }
+    };
+  }
   if (tipo === 'histograma') {
-    const precios = datos.inv.map((p) => Number(p.precio || 0)).filter((v) => v > 0);
-    const min = Math.min(...precios, 0); const max = Math.max(...precios, 1); const n = 6; const w = Math.max(1, (max - min) / n);
-    const labels = []; const counts = [];
-    for (let i = 0; i < n; i++) { const a = Math.round(min + i * w); const b = Math.round(min + (i + 1) * w); labels.push('$' + (a / 1000).toFixed(0) + 'k-' + (b / 1000).toFixed(0) + 'k'); counts.push(precios.filter((v) => v >= a && (i === n - 1 ? v <= b : v < b)).length); }
-    cfg = { type: 'bar', data: { labels, datasets: [{ label: 'PRODUCTOS POR RANGO DE PRECIO', data: counts, backgroundColor: gradOro, borderRadius: 8, maxBarThickness: 54 }] }, options: base };
+    const precios = (datos.inv || []).map((p) => Number(p.precio || 0)).filter((v) => v > 0);
+    if (!precios.length) {
+      cfg = { type: 'bar', data: { labels: ['Sin inventario'], datasets: [{ label: 'PRODUCTOS POR RANGO DE PRECIO', data: [0], backgroundColor: gradOro, borderRadius: 8 }] }, options: base };
+    } else {
+      const min = Math.min(...precios);
+      const max = Math.max(...precios);
+      const n = Math.min(6, precios.length > 3 ? 5 : Math.max(1, precios.length));
+      const w = Math.max(1, (max - min) / n);
+      const labels = [];
+      const counts = [];
+      for (let i = 0; i < n; i++) {
+        const a = Math.round(min + i * w);
+        const b = Math.round(min + (i + 1) * w);
+        const labelA = a >= 1000 ? (a / 1000).toFixed(0) + 'k' : String(a);
+        const labelB = b >= 1000 ? (b / 1000).toFixed(0) + 'k' : String(b);
+        labels.push('$' + labelA + '-$' + labelB);
+        counts.push(precios.filter((v) => v >= a && (i === n - 1 ? v <= b : v < b)).length);
+      }
+      cfg = { type: 'bar', data: { labels, datasets: [{ label: 'PRODUCTOS POR RANGO DE PRECIO', data: counts, backgroundColor: gradOro, borderRadius: 8, maxBarThickness: 54 }] }, options: base };
+    }
   }
   if (tipo === 'dispersion') {
-    const pts = datos.inv.slice(0, 80).map((p) => ({ x: Number(p.stock || 0), y: Number(p.precio || 0) }));
-    cfg = { type: 'bubble', data: { datasets: [{ label: 'STOCK VS PRECIO (TAMANO = VALOR)', data: pts.map((p) => ({ x: p.x, y: p.y, r: Math.max(4, Math.min(14, (p.x * p.y) / 500000 + 4)) })), backgroundColor: 'rgba(248,113,113,.65)', borderColor: '#facc15', borderWidth: 1 }] }, options: { ...base, scales: { x: { title: { display: true, text: 'STOCK', color: '#facc15' }, ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(148,163,184,.08)' } }, y: { title: { display: true, text: 'PRECIO', color: '#facc15' }, ticks: { color: '#cbd5e1', callback: (v) => '$' + (v / 1000) + 'k' }, grid: { color: 'rgba(148,163,184,.1)' } } } } };
+    const pts = (datos.inv || []).slice(0, 80).map((p) => ({ x: Number(p.stock || 0), y: Number(p.precio || 0), nombre: p.nombre }));
+    cfg = {
+      type: 'bubble',
+      data: {
+        datasets: [{
+          label: 'STOCK VS PRECIO (TAMAÑO = VALOR EN INVENTARIO)',
+          data: pts.length ? pts.map((p) => ({ x: p.x, y: p.y, r: Math.max(5, Math.min(18, ((p.x * p.y) / 1000000) * 3 + 5)) })) : [{ x: 0, y: 0, r: 0 }],
+          backgroundColor: 'rgba(56,189,248,.65)',
+          borderColor: '#facc15',
+          borderWidth: 1.5
+        }]
+      },
+      options: {
+        ...base,
+        scales: {
+          x: { title: { display: true, text: 'STOCK DISPONIBLE', color: '#facc15' }, ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(148,163,184,.08)' } },
+          y: { title: { display: true, text: 'PRECIO UNITARIO', color: '#facc15' }, ticks: { color: '#cbd5e1', callback: (v) => '$' + (v / 1000) + 'k' }, grid: { color: 'rgba(148,163,184,.1)' } }
+        }
+      }
+    };
   }
   if (cfg) canvas._chart = new Chart(canvas, cfg);
 }
@@ -1231,6 +1371,30 @@ function loadSection(section) {
         <div class="clock" id="clock"></div>
       </div>
 
+      <!-- CENTRO ESTADISTICO KAJA (PRIMERO EN VERSE) -->
+      <div class="insight-panel" style="margin-top: 14px; margin-bottom: 24px;">
+        <div class="insight-header">
+          <h2>Centro estadístico KAJA</h2>
+          <span id="resumenInventarioTag">Cargando datos de inventario...</span>
+        </div>
+        <div class="kaja-viewer-nav chart-toggle-wrap" style="margin-top:0;">
+          <button class="chart-toggle active" data-stat="barras">Barras</button>
+          <button class="chart-toggle" data-stat="linea">Línea</button>
+          <button class="chart-toggle" data-stat="pastel">Pastel</button>
+          <button class="chart-toggle" data-stat="histograma">Histograma</button>
+          <button class="chart-toggle" data-stat="dispersion">Dispersión</button>
+          <button class="chart-toggle" data-stat="caja">Caja</button>
+          <button id="statAutoBtn" class="chart-toggle" type="button">Auto ▶</button>
+        </div>
+        <div class="panel-box kaja-viewer" style="margin-top:12px;">
+          <div class="panel-header"><h3 id="statViewerTitle">Barras por categoría</h3><span id="statViewerTag">Comparar valores</span></div>
+          <div class="kaja-viewer-box"><canvas id="statViewer" style="display:block;"></canvas><div id="statBoxplot" class="kaja-boxplot" style="display:none;width:100%;"></div></div>
+          <small id="statViewerDesc" style="opacity:.7;">Barras rectangulares para comparar valores entre categorías.</small>
+          <small id="statBoxplotTxt" style="opacity:.7;display:none;"></small>
+          <div class="kaja-rotate-bar"><span id="statRotateBar"></span></div>
+        </div>
+      </div>
+
       <div class="cards kaja-kpi-compact" id="dashboardCards">
         <div class="card"><div class="card-icon icon-blue"><i class="fa-solid fa-sack-dollar"></i></div><div class="card-copy"><h3>Ventas del día</h3><span id="ventasDia">$0</span></div></div>
         <div class="card"><div class="card-icon icon-gold"><i class="fa-solid fa-file-invoice"></i></div><div class="card-copy"><h3>Facturas del día</h3><span id="facturasDia">0</span></div></div>
@@ -1298,66 +1462,11 @@ function loadSection(section) {
         <div class="panel-header"><h3>KAJA APP</h3><span>Próximamente</span></div>
         <p style="color:#cbd5e1;font-size:.85rem;margin:0;">Puente backend listo en <b>/api/app/status</b> y <b>/api/app/sync</b>. El módulo móvil queda reservado para una próxima integración.</p>
       </div>
-
-      <div class="insight-panel" style="margin-top: 24px;">
-        <div class="insight-header">
-          <h2>Centro estadístico KAJA</h2>
-          <span id="resumenInventarioTag">Actualizando...</span>
-        </div>
-        <div id="resumenInventario" class="mini-chart" style="display:none;"></div>
-        <div class="kaja-viewer-nav chart-toggle-wrap" style="margin-top:0;">
-          <button class="chart-toggle active" data-stat="barras">Barras</button>
-          <button class="chart-toggle" data-stat="linea">Línea</button>
-          <button class="chart-toggle" data-stat="pastel">Pastel</button>
-          <button class="chart-toggle" data-stat="histograma">Histograma</button>
-          <button class="chart-toggle" data-stat="dispersion">Dispersión</button>
-          <button class="chart-toggle" data-stat="caja">Caja</button>
-          <button id="statAutoBtn" class="chart-toggle" type="button">Auto ▶</button>
-        </div>
-        <div class="panel-box kaja-viewer" style="margin-top:12px;">
-          <div class="panel-header"><h3 id="statViewerTitle">Barras por categoría</h3><span id="statViewerTag">Comparar valores</span></div>
-          <div class="kaja-viewer-box"><canvas id="statViewer" style="display:block;"></canvas><div id="statBoxplot" class="kaja-boxplot" style="display:none;width:100%;"></div></div>
-          <small id="statViewerDesc" style="opacity:.7;">Barras rectangulares para comparar valores entre categorías.</small>
-          <small id="statBoxplotTxt" style="opacity:.7;display:none;"></small>
-          <div class="kaja-rotate-bar"><span id="statRotateBar"></span></div>
-        </div>
-        <div style="display:none;"><canvas id="statBarras"></canvas><canvas id="statLinea"></canvas><canvas id="statPastel"></canvas><canvas id="statHistograma"></canvas><canvas id="statDispersion"></canvas></div>
-      </div>
-
-      <div class="insight-panel">
-        <div class="insight-header">
-          <h2>Centro estadístico KAJA</h2>
-          <span id="resumenInventarioTag">Actualizando...</span>
-        </div>
-        <div id="resumenInventario" class="mini-chart" style="display:none;"></div>
-        <div class="kaja-viewer-nav chart-toggle-wrap" style="margin-top:0;">
-          <button class="chart-toggle active" data-stat="barras">Barras</button>
-          <button class="chart-toggle" data-stat="linea">Línea</button>
-          <button class="chart-toggle" data-stat="pastel">Pastel</button>
-          <button class="chart-toggle" data-stat="histograma">Histograma</button>
-          <button class="chart-toggle" data-stat="dispersion">Dispersión</button>
-          <button class="chart-toggle" data-stat="caja">Caja</button>
-          <button id="statAutoBtn" class="chart-toggle" type="button">Auto ▶</button>
-        </div>
-        <div class="panel-box kaja-viewer" style="margin-top:12px;">
-          <div class="panel-header"><h3 id="statViewerTitle">Barras por categoría</h3><span id="statViewerTag">Comparar valores</span></div>
-          <div class="kaja-viewer-box"><canvas id="statViewer" style="display:block;"></canvas><div id="statBoxplot" class="kaja-boxplot" style="display:none;width:100%;"></div></div>
-          <small id="statViewerDesc" style="opacity:.7;">Barras rectangulares para comparar valores entre categorías.</small>
-          <small id="statBoxplotTxt" style="opacity:.7;display:none;"></small>
-          <div class="kaja-rotate-bar"><span id="statRotateBar"></span></div>
-        </div>
-        <div style="display:none;"><canvas id="statBarras"></canvas><canvas id="statLinea"></canvas><canvas id="statPastel"></canvas><canvas id="statHistograma"></canvas><canvas id="statDispersion"></canvas></div>
-      </div>
     `;
 
     startClock();
     const productos = JSON.parse(localStorage.getItem('kajaProductos') || '[]');
-    const listaProductos = Array.isArray(productos) && productos.length ? productos : [
-      { nombre: 'Monitor Samsung 24', stock: 13, precio: 520000, activo: 1, codigo: 'P003' },
-      { nombre: 'Memoria USB Kingston', stock: 40, precio: 28000, activo: 1, codigo: 'P004' },
-      { nombre: 'SSD Kingston 480GB', stock: 12, precio: 180000, activo: 1, codigo: 'P005' },
-      { nombre: 'Router TP-Link', stock: 9, precio: 130000, activo: 1, codigo: 'P012' }
-    ];
+    const listaProductos = Array.isArray(productos) ? productos : [];
 
     const total = listaProductos.length;
     const activos = listaProductos.filter((item) => Number(item.activo) === 1).length;
@@ -1406,44 +1515,99 @@ function loadSection(section) {
     if (document.getElementById('dashHasta')) document.getElementById('dashHasta').value = reportHasta;
     async function cargarDashboard(desde, hasta) {
       try {
-        const report = await KajaApi.dashboard({ desde, hasta });
+        const [report, invData] = await Promise.all([
+          KajaApi.dashboard({ desde, hasta }).catch(() => ({})),
+          KajaApi.inventarioReporte().catch(() => null)
+        ]);
         state.dashboardReport = report;
-        const kpis = report.kpis || {};
-        document.getElementById('ventasDia').textContent = formatMoney(kpis.ventas || 0);
-        document.getElementById('ticketPromedio').textContent = formatMoney(kpis.ticket_promedio || 0);
-        document.getElementById('facturasDia').textContent = String(kpis.facturas || 0);
-        if (report.top_productos && report.top_productos.length) {
-          document.getElementById('topProductosList').innerHTML = report.top_productos.slice(0, 4).map((p) => `
-            <div class="state-item"><div><strong>${p.nombre}</strong><small>${Number(p.unidades || 0)} und · ${formatMoney(p.total || 0)}</small></div><span>${p.unidades || 0}</span></div>`).join('');
+
+        // Actualizar inventario fresco de la base de datos
+        const prods = Array.isArray(invData) ? invData : JSON.parse(localStorage.getItem('kajaProductos') || '[]');
+        if (Array.isArray(invData)) {
+          localStorage.setItem('kajaProductos', JSON.stringify(invData));
         }
+
+        const totProds = prods.length;
+        const actProds = prods.filter((p) => Number(p.activo) === 1).length;
+        const inactProds = totProds - actProds;
+        const stockTot = prods.reduce((s, p) => s + Number(p.stock || 0), 0);
+        const valorTot = prods.reduce((s, p) => s + Number(p.precio || 0) * Number(p.stock || 0), 0);
+        const disp = totProds ? Math.round((actProds / totProds) * 100) : 0;
+
+        // KPIs de inventario y disponibilidad
+        const elTotalP = document.getElementById('totalProductos'); if (elTotalP) elTotalP.textContent = String(totProds);
+        const elActP = document.getElementById('productosActivos'); if (elActP) elActP.textContent = String(actProds);
+        const elInactP = document.getElementById('productosInactivos'); if (elInactP) elInactP.textContent = String(inactProds);
+        const elValInv = document.getElementById('valorInventario'); if (elValInv) elValInv.textContent = formatMoney(valorTot);
+        const elStockPct = document.getElementById('stockPercent'); if (elStockPct) elStockPct.textContent = `${disp}%`;
+        const elStockHealth = document.getElementById('stockHealth'); if (elStockHealth) elStockHealth.textContent = disp >= 70 ? 'Inventario saludable' : (totProds ? 'Requiere revisión' : 'Sin productos');
+        const elStockRing = document.getElementById('stockRing'); if (elStockRing) elStockRing.style.background = `conic-gradient(#38bdf8 0 ${disp}%, #1f2937 ${disp}% 100%)`;
+
+        // Tag del Centro Estadistico KAJA
+        const elResumenTag = document.getElementById('resumenInventarioTag');
+        if (elResumenTag) {
+          elResumenTag.textContent = `Stock: ${stockTot} und · Valor: ${formatMoney(valorTot)} · ${totProds} productos`;
+        }
+
+        // KPIs de ventas del día / reporte
+        const kpis = report.kpis || {};
+        const elVentasDia = document.getElementById('ventasDia'); if (elVentasDia) elVentasDia.textContent = formatMoney(kpis.ventas || 0);
+        const elTicketProm = document.getElementById('ticketPromedio'); if (elTicketProm) elTicketProm.textContent = formatMoney(kpis.ticket_promedio || 0);
+        const elFacturasDia = document.getElementById('facturasDia'); if (elFacturasDia) elFacturasDia.textContent = String(kpis.facturas || 0);
+
+        // Top productos
+        if (report.top_productos && report.top_productos.length) {
+          const elTop = document.getElementById('topProductosList');
+          if (elTop) {
+            elTop.innerHTML = report.top_productos.slice(0, 4).map((p) => `
+              <div class="state-item"><div><strong>${p.nombre}</strong><small>${Number(p.unidades || 0)} und · ${formatMoney(p.total || 0)}</small></div><span>${p.unidades || 0}</span></div>`).join('');
+          }
+        } else if (prods.length) {
+          const elTop = document.getElementById('topProductosList');
+          if (elTop) {
+            elTop.innerHTML = [...prods].sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0)).slice(0, 4).map((p) => `
+              <div class="state-item"><div><strong>${p.nombre}</strong><small>${p.codigo || 'Sin código'} · ${formatMoney(p.precio || 0)}</small></div><span>${p.stock || 0} und</span></div>`).join('');
+          }
+        }
+
+        // Stock por nivel
         if (report.stock_por_nivel) {
           const niv = report.stock_por_nivel;
           const tot = Number(niv.total || 0) || 1;
-          document.getElementById('stockAlta').style.width = `${(Number(niv.alto || 0) / tot) * 100}%`;
-          document.getElementById('stockMedia').style.width = `${(Number(niv.medio || 0) / tot) * 100}%`;
-          document.getElementById('stockBaja').style.width = `${(Number(niv.bajo || 0) / tot) * 100}%`;
-          document.getElementById('stockBajo').textContent = String(niv.bajo || 0);
+          const elSA = document.getElementById('stockAlta'); if (elSA) elSA.style.width = `${(Number(niv.alto || 0) / tot) * 100}%`;
+          const elSM = document.getElementById('stockMedia'); if (elSM) elSM.style.width = `${(Number(niv.medio || 0) / tot) * 100}%`;
+          const elSB = document.getElementById('stockBaja'); if (elSB) elSB.style.width = `${(Number(niv.bajo || 0) / tot) * 100}%`;
+          const elSBN = document.getElementById('stockBajo'); if (elSBN) elSBN.textContent = String(niv.bajo || 0);
+        } else if (prods.length) {
+          const sAlta = prods.filter((p) => Number(p.stock || 0) > 20).length;
+          const sMedia = prods.filter((p) => Number(p.stock || 0) >= 8 && Number(p.stock || 0) <= 20).length;
+          const sBaja = prods.filter((p) => Number(p.stock || 0) < 8).length;
+          const elSA = document.getElementById('stockAlta'); if (elSA) elSA.style.width = `${(sAlta / totProds) * 100}%`;
+          const elSM = document.getElementById('stockMedia'); if (elSM) elSM.style.width = `${(sMedia / totProds) * 100}%`;
+          const elSB = document.getElementById('stockBaja'); if (elSB) elSB.style.width = `${(sBaja / totProds) * 100}%`;
+          const elSBN = document.getElementById('stockBajo'); if (elSBN) elSBN.textContent = String(sBaja);
         }
-        if (report.alertas && report.alertas.length) {
-          document.getElementById('stockCritico').innerHTML = report.alertas.slice(0, 4).map((producto) => `
-            <div class="state-item warning"><div><strong>${producto.nombre}</strong><small>${producto.stock || 0} unidades</small></div><span>Revisar</span></div>`).join('');
-        }
-        try {
-          const inv = await KajaApi.inventarioReporte().catch(() => null);
-          if (inv && inv.length) {
-            localStorage.setItem('kajaProductos', JSON.stringify(inv));
-            const vt = inv.reduce((s, it) => s + Number(it.precio || 0) * Number(it.stock || 0), 0);
-            document.getElementById('valorInventario').textContent = formatMoney(vt);
-            document.getElementById('totalProductos').textContent = String(inv.length);
-            document.getElementById('resumenInventarioTag').textContent = `Stock ${inv.reduce((s, it) => s + Number(it.stock || 0), 0)} · Valor $${vt.toLocaleString('es-CO')}`;
+
+        // Alertas de stock crítico
+        const elCrit = document.getElementById('stockCritico');
+        if (elCrit) {
+          if (report.alertas && report.alertas.length) {
+            elCrit.innerHTML = report.alertas.slice(0, 4).map((p) => `
+              <div class="state-item warning"><div><strong>${p.nombre}</strong><small>${p.stock || 0} unidades</small></div><span>Revisar</span></div>`).join('');
+          } else {
+            const critProds = prods.filter((p) => Number(p.stock || 0) <= 10).slice(0, 4);
+            elCrit.innerHTML = critProds.length
+              ? critProds.map((p) => `
+                <div class="state-item warning"><div><strong>${p.nombre}</strong><small>${p.stock || 0} unidades</small></div><span>Revisar</span></div>`).join('')
+              : "<p class='empty-state-small'>Sin alertas por stock</p>";
           }
-        } catch (e) {}
-        const activeBtn = document.querySelector('.chart-toggle.active');
-        const vista = activeBtn ? activeBtn.dataset.chart : 'ventas';
-        const esReporte = vista === 'ventas' || vista === 'categorias';
-        renderDashboardChart(vista, esReporte ? report : listaProductos);
+        }
+
+        // Dibujar el Centro Estadístico KAJA con datos consolidados
         try { dibujarEstadisticasKaja(report); } catch (e) {}
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error al cargar dashboard:', e);
+      }
     }
     cargarDashboard(reportDesde, reportHasta);
     document.getElementById('dashFiltrar')?.addEventListener('click', () => {
@@ -1491,16 +1655,7 @@ function loadSection(section) {
       </div>
     `;
 
-    document.querySelectorAll('.chart-toggle').forEach((button) => {
-      button.addEventListener('click', () => {
-        document.querySelectorAll('.chart-toggle').forEach((item) => item.classList.remove('active'));
-        button.classList.add('active');
-        const isReportChart = button.dataset.chart === 'ventas' || button.dataset.chart === 'categorias';
-        renderDashboardChart(button.dataset.chart, isReportChart ? state.dashboardReport : listaProductos);
-      });
-    });
 
-    renderDashboardChart('barras', listaProductos);
     return;
   }
 
@@ -2667,3 +2822,4 @@ function renderLogin() {
 }
 
 renderLogin();
+
